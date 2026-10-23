@@ -14,6 +14,8 @@ Con `NEXT_PUBLIC_API_MOCK=true` (default in `.env.example`) l'app usa un backend
 (dati **fittizi**, stato in `localStorage`; qualsiasi credenziale è accettata). Per usare `watchly-be`
 imposta `NEXT_PUBLIC_API_MOCK=false` e `NEXT_PUBLIC_API_BASE_URL`; il contratto è in `lib/api/types.ts`
 e `lib/api/http.ts` (sessione via cookie `HttpOnly`, `credentials: 'include'`).
+Il login richiede email e password: `POST /auth/login` invia il JSON `{ email, password }`,
+in accordo con il backend. In modalita demo usare un'email valida e una password non vuota.
 
 ## Script
 

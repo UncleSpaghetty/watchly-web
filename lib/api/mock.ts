@@ -120,11 +120,11 @@ const mockNews = (following: string[]): NewsItem[] => [
 ];
 
 export const mockApi: WatchlyApi = {
-  async login(username, password) {
+  async login(email, password) {
     await delay();
-    if (!username || !password) throw new ApiError(401, 'Credenziali non valide.');
-    save({ ...load(), user: username });
-    return { ...DEMO_USER, name: username };
+    if (!email || !password) throw new ApiError(401, 'Credenziali non valide.');
+    save({ ...load(), user: email });
+    return { ...DEMO_USER, name: email };
   },
   async logout() {
     await delay(50);
