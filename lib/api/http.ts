@@ -63,8 +63,8 @@ const qs = (params: Record<string, string | undefined>) => {
 };
 
 export const httpApi: WatchlyApi = {
-  login: (username, password) =>
-    request<SessionUser>('/auth/login', { method: 'POST', json: { username, password } }),
+  login: (email, password) =>
+    request<SessionUser>('/auth/login', { method: 'POST', json: { email, password } }),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
   me: () => request<SessionUser>('/me'),
   search: (q, kind: SeriesKind | 'all', source: CatalogSource | 'all', signal) =>

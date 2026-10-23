@@ -19,7 +19,7 @@ export default function LoginPage() {
     setPending(true);
     setError(null);
     try {
-      await api.login(String(form.get('username') ?? ''), String(form.get('password') ?? ''));
+      await api.login(String(form.get('email') ?? ''), String(form.get('password') ?? ''));
       qc.clear();
       router.replace('/');
     } catch (e) {
@@ -35,8 +35,8 @@ export default function LoginPage() {
       <p className="mb-6 text-muted">Accedi per vedere il tuo calendario.</p>
       <form onSubmit={onSubmit} className="space-y-4">
         <label className="block text-sm">
-          Utente
-          <input name="username" required autoComplete="username" className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5" />
+          Email
+          <input name="email" type="email" required autoComplete="username" className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5" />
         </label>
         <label className="block text-sm">
           Password
