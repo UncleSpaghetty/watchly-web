@@ -14,6 +14,54 @@ import {
   type WatchlyApi,
 } from './types';
 
+interface BackendExternalId {
+  source: CatalogSource;
+  external_id: string;
+}
+
+interface BackendSeries {
+  id: string;
+  kind: SeriesKind;
+  title: string;
+  alternative_titles: string[];
+  poster_url: string | null;
+  synopsis: string | null;
+  format: string | null;
+  year: number | null;
+  external_ids: BackendExternalId[];
+  followed: boolean;
+}
+
+interface BackendSearchResponse {
+  results: BackendSeries[];
+  provider_errors: Record<string, string>;
+}
+
+interface BackendAvailability {
+  status: string;
+  service_id: string | null;
+  local_date: string | null;
+  source_url: string | null;
+}
+
+interface BackendCalendarItem {
+  episode_id: string;
+  series: { id: string; title: string; kind: SeriesKind; poster_url: string | null };
+  season_number: number | null;
+  episode_number: number | null;
+  title: string | null;
+  local_date: string;
+  date_kind: 'italy' | 'original';
+  italy: BackendAvailability;
+  watched: boolean;
+}
+
+interface BackendCalendarResponse {
+  start: string;
+  end: string;
+  items: BackendCalendarItem[];
+}
+
 const BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
 
 async function request<T>(
@@ -62,22 +110,89 @@ const qs = (params: Record<string, string | undefined>) => {
   return s ? `?${s}` : '';
 };
 
+function mapSeries(item: BackendSeries): SeriesSummary {
+  const external = item.external_ids[0];
+  return {
+    id: item.id,
+    title: item.title,
+    alternativeTitles: item.alternative_titles,
+    kind: item.kind,
+    source: external?.source ?? (item.kind === 'tv' ? 'tmdb' : 'anilist'),
+    externalId: external?.external_id ?? '',
+    format: item.format,
+    year: item.year,
+    posterUrl: item.poster_url,
+    synopsis: item.synopsis,
+    following: item.followed,
+  };
+}
+
 export const httpApi: WatchlyApi = {
   login: (email, password) =>
     request<SessionUser>('/auth/login', { method: 'POST', json: { email, password } }),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
   me: () => request<SessionUser>('/me'),
-  search: (q, kind: SeriesKind | 'all', source: CatalogSource | 'all', signal) =>
-    request<SeriesSummary[]>(
+  search: async (q, kind: SeriesKind | 'all', source: CatalogSource | 'all', signal) => {
+    const response = await request<BackendSearchResponse>(
       `/catalog/search${qs({ q, kind: kind === 'all' ? undefined : kind, source: source === 'all' ? undefined : source })}`,
       { signal },
-    ),
+    );
+    if (response.results.length === 0 && Object.keys(response.provider_errors).length > 0) {
+      throw new ApiError(503, Object.values(response.provider_errors).join(' '));
+    }
+    return response.results.map(mapSeries);
+  },
   getSeries: (id) => request<SeriesDetail>(`/series/${encodeURIComponent(id)}`),
   getEpisodes: (id) => request<EpisodeDto[]>(`/series/${encodeURIComponent(id)}/episodes`),
   following: () => request<FollowingItem[]>('/me/following'),
   follow: (id) => request<void>(`/me/following/${encodeURIComponent(id)}`, { method: 'PUT' }),
   unfollow: (id) => request<void>(`/me/following/${encodeURIComponent(id)}`, { method: 'DELETE' }),
-  calendar: (from, to, mode) => request<CalendarResponse>(`/me/calendar${qs({ from, to, mode })}`),
+  calendar: async (from, to, mode) => {
+    const response = await request<BackendCalendarResponse>(
+      `/me/calendar${qs({ start: from, end: to, mode: mode === 'original' ? 'all' : 'italy' })}`,
+    );
+    return {
+      from: response.start,
+      to: response.end,
+      mode,
+      entries: response.items.map((item) => ({
+        date: item.local_date,
+        episodeId: item.episode_id,
+        series: {
+          id: item.series.id,
+          title: item.series.title,
+          kind: item.series.kind,
+          posterUrl: item.series.poster_url,
+        },
+        episodeNumber: item.episode_number,
+        seasonNumber: item.season_number,
+        episodeTitle: item.title,
+        watchedAt: item.watched ? `${item.local_date}T00:00:00+02:00` : null,
+        availability:
+          item.date_kind === 'original'
+            ? {
+                country: 'ORIGINAL',
+                service: null,
+                status: 'original' as const,
+                localDate: item.local_date,
+                precision: 'date' as const,
+                sourceUrl: null,
+                lastVerifiedAt: null,
+              }
+            : {
+                country: 'IT',
+                service: item.italy.service_id,
+                status: item.italy.status as CalendarResponse['entries'][number]['availability']['status'],
+                localDate: item.italy.local_date,
+                precision: item.italy.local_date ? ('date' as const) : ('unknown' as const),
+                sourceUrl: item.italy.source_url,
+                lastVerifiedAt: null,
+              },
+      })),
+      stale: false,
+      lastSuccessfulSyncAt: null,
+    };
+  },
   setWatched: (id, watched) =>
     request<void>(`/me/episodes/${encodeURIComponent(id)}`, { method: 'PATCH', json: { watched } }),
   sync: (seriesId) =>
