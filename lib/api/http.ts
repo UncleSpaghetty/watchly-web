@@ -3,7 +3,6 @@ import {
   type CalendarResponse,
   type CatalogSource,
   type EpisodeDto,
-  type FollowingItem,
   type NewsPage,
   type SeriesDetail,
   type SeriesKind,
@@ -110,7 +109,22 @@ interface BackendSyncRun {
   error: string | null;
 }
 
-const BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
+interface BackendSessionUser {
+  id: string;
+  email: string;
+  display_name: string | null;
+}
+
+export function resolveApiBaseUrl(configured: string | undefined, environment: string): string {
+  const value = configured?.trim();
+  if (value) return value.replace(/\/$/, '');
+  return environment === 'development' ? 'http://localhost:8000/api/v1' : '';
+}
+
+const BASE_URL = resolveApiBaseUrl(
+  process.env.NEXT_PUBLIC_API_BASE_URL,
+  process.env.NODE_ENV,
+);
 
 async function request<T>(
   path: string,
@@ -229,6 +243,13 @@ function mapSettings(item: BackendUserSettings): UserSettings {
   };
 }
 
+function mapSessionUser(item: BackendSessionUser): SessionUser {
+  return {
+    id: item.id,
+    name: item.display_name || item.email,
+  };
+}
+
 function mapSync(item: BackendSyncRun): SyncResult {
   const statuses: Record<BackendSyncRun['status'], SyncResult['status']> = {
     pending: 'queued',
@@ -245,10 +266,15 @@ function mapSync(item: BackendSyncRun): SyncResult {
 }
 
 export const httpApi: WatchlyApi = {
-  login: (email, password) =>
-    request<SessionUser>('/auth/login', { method: 'POST', json: { email, password } }),
+  login: async (email, password) =>
+    mapSessionUser(
+      await request<BackendSessionUser>('/auth/login', {
+        method: 'POST',
+        json: { email, password },
+      }),
+    ),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
-  me: () => request<SessionUser>('/me'),
+  me: async () => mapSessionUser(await request<BackendSessionUser>('/me')),
   search: async (q, kind: SeriesKind | 'all', source: CatalogSource | 'all', signal) => {
     const response = await request<BackendSearchResponse>(
       `/catalog/search${qs({ q, kind: kind === 'all' ? undefined : kind, source: source === 'all' ? undefined : source })}`,
@@ -354,7 +380,9 @@ export const httpApi: WatchlyApi = {
     };
   },
   setWatched: (id, watched) =>
-    request<void>(`/me/episodes/${encodeURIComponent(id)}`, { method: 'PATCH', json: { watched } }),
+    request<void>(`/me/episodes/${encodeURIComponent(id)}/watched`, {
+      method: watched ? 'PUT' : 'DELETE',
+    }),
   sync: async (seriesId) =>
     mapSync(
       seriesId

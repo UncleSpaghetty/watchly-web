@@ -1,15 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { httpApi } from '../lib/api/http';
+import { httpApi, resolveApiBaseUrl } from '../lib/api/http';
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe('login HTTP contract', () => {
+  it('uses the local Docker API when the development variable is missing', () => {
+    expect(resolveApiBaseUrl(undefined, 'development')).toBe('http://localhost:8000/api/v1');
+    expect(resolveApiBaseUrl('https://api.example.test/api/v1/', 'production')).toBe(
+      'https://api.example.test/api/v1',
+    );
+  });
+
   it('sends email and password with session credentials, not username', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(JSON.stringify({ id: 'owner', name: 'Owner' }), {
+      new Response(JSON.stringify({ id: 'owner', email: 'owner@example.com', display_name: 'Owner' }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       }),

@@ -7,7 +7,7 @@ function cx(...values: Array<string | false | null | undefined>) {
 }
 
 const baseField =
-  "w-full rounded-[14px] border border-border bg-surface px-4 py-3.5 text-[15px] placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+  'w-full rounded-[14px] border border-border bg-surface px-4 py-3.5 text-[15px] placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary';
 
 export function TextField(props: React.InputHTMLAttributes<HTMLInputElement> & { className?: string }) {
   const { className, ...rest } = props;
@@ -38,7 +38,7 @@ export function Chip({
       aria-pressed={selected}
       {...props}
       className={cx(
-        'rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors',
+        'rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-[transform,background-color,border-color,color] hover:-translate-y-0.5 active:translate-y-0',
         selected
           ? 'border-primary bg-primary text-surface'
           : 'border-border text-muted hover:bg-soft hover:text-foreground',
@@ -77,7 +77,7 @@ export function SegmentedTabs<T extends string>({
             aria-selected={selected}
             onClick={() => onChange(item.value)}
             className={cx(
-              'flex-1 rounded-[10px] px-3 py-2.5 text-sm font-semibold transition-colors',
+              'flex-1 rounded-[10px] px-3 py-2.5 text-sm font-semibold transition-[transform,background-color,color] active:scale-[0.98]',
               selected ? 'bg-soft text-primary' : 'text-muted hover:text-foreground',
             )}
           >
@@ -89,14 +89,8 @@ export function SegmentedTabs<T extends string>({
   );
 }
 
-export function Card({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement> & { className?: string }) {
+export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement> & { className?: string }) {
   return (
-    <div
-      {...props}
-      className={cx('rounded-[18px] border border-border bg-surface p-5', className)}
-    />
+    <div {...props} className={cx('motion-card rounded-[18px] border border-border bg-surface/95 p-5', className)} />
   );
 }

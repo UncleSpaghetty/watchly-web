@@ -29,10 +29,11 @@ export default function SearchPage() {
     return () => clearTimeout(t);
   }, [text]);
 
-  useEffect(() => {
-    if (kind === 'tv' && source !== 'tmdb') setSource('tmdb');
-    if (kind === 'anime' && source === 'tmdb') setSource('all');
-  }, [kind, source]);
+  const changeKind = (next: KindFilter) => {
+    setKind(next);
+    if (next === 'tv') setSource('tmdb');
+    if (next === 'anime' && source === 'tmdb') setSource('all');
+  };
 
   const placeholder = useMemo(() => {
     if (kind === 'anime') return 'Cerca un anime';
@@ -70,7 +71,7 @@ export default function SearchPage() {
     <div>
       <PageHeader eyebrow="CATALOGO" title="Cerca" />
 
-      <SegmentedTabs value={kind} ariaLabel="Categoria" items={kindItems} onChange={setKind} />
+      <SegmentedTabs value={kind} ariaLabel="Categoria" items={kindItems} onChange={changeKind} />
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <p className="text-[13px] text-muted">Fonte</p>
