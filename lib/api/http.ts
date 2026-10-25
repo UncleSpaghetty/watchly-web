@@ -71,6 +71,34 @@ interface BackendCalendarResponse {
   items: BackendCalendarItem[];
 }
 
+interface BackendSeriesRead extends BackendSeries {
+  original_title: string | null;
+  status: string | null;
+  start_date: string | null;
+  last_synced_at: string | null;
+  last_sync_status: string | null;
+  stale: boolean;
+}
+
+interface BackendEpisodeRead {
+  id: string;
+  series_id: string;
+  season_number: number | null;
+  episode_number: number | null;
+  title: string | null;
+  original_air_at: string | null;
+  original_air_date: string | null;
+  italy: BackendAvailability;
+  watched: boolean;
+}
+
+interface BackendEpisodeListResponse {
+  episodes: BackendEpisodeRead[];
+  last_synced_at: string | null;
+  sync_status: string | null;
+  stale: boolean;
+}
+
 const BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
 
 async function request<T>(
@@ -136,6 +164,48 @@ function mapSeries(item: BackendSeries): SeriesSummary {
     posterUrl: item.poster_url,
     synopsis: item.synopsis,
     following: item.followed,
+  };
+}
+
+function mapSyncStatus(value: string | null): SeriesDetail['lastSyncStatus'] {
+  if (!value) return null;
+  if (value === 'ok') return 'ok';
+  if (value === 'partial') return 'partial';
+  if (value === 'failed' || value === 'error') return 'failed';
+  return null;
+}
+
+function mapSeriesDetail(item: BackendSeriesRead): SeriesDetail {
+  const base = mapSeries(item);
+  return {
+    ...base,
+    status: item.status,
+    seasons: null,
+    lastSyncAt: item.last_synced_at,
+    lastSyncStatus: mapSyncStatus(item.last_sync_status),
+    nextItalianAvailability: null,
+  };
+}
+
+function mapEpisode(item: BackendEpisodeRead): EpisodeDto {
+  const originalAirDate =
+    item.original_air_date ?? (item.original_air_at ? item.original_air_at.slice(0, 10) : null);
+  return {
+    id: item.id,
+    seasonNumber: item.season_number,
+    number: item.episode_number,
+    title: item.title,
+    originalAirDate,
+    availability: {
+      country: 'IT',
+      service: item.italy.service_id,
+      status: item.italy.status as EpisodeDto['availability']['status'],
+      localDate: item.italy.local_date,
+      precision: item.italy.local_date ? 'date' : 'unknown',
+      sourceUrl: item.italy.source_url,
+      lastVerifiedAt: null,
+    },
+    watchedAt: item.watched ? new Date().toISOString() : null,
   };
 }
 
