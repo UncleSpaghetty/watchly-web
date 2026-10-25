@@ -82,9 +82,9 @@ export default function MySeriesPage() {
                 series={s}
                 footer={
                   <p className="mt-1 text-xs text-muted">
-                    {s.nextItalianAvailability?.localDate
-                      ? `Prossima uscita in Italia: ${formatLongDate(s.nextItalianAvailability.localDate)}`
-                      : 'Data italiana non ancora disponibile'}
+                    {s.nextAvailability?.localDate
+                      ? `Prossimo episodio: ${formatLongDate(s.nextAvailability.localDate)}`
+                      : 'Data del prossimo episodio non ancora disponibile'}
                   </p>
                 }
               />

@@ -99,6 +99,17 @@ interface BackendEpisodeListResponse {
   stale: boolean;
 }
 
+interface BackendUserSettings {
+  notifications_enabled: boolean;
+  last_successful_sync_at: string | null;
+}
+
+interface BackendSyncRun {
+  status: 'pending' | 'running' | 'succeeded' | 'partial' | 'failed';
+  completed_at: string | null;
+  error: string | null;
+}
+
 const BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
 
 async function request<T>(
@@ -209,6 +220,30 @@ function mapEpisode(item: BackendEpisodeRead): EpisodeDto {
   };
 }
 
+function mapSettings(item: BackendUserSettings): UserSettings {
+  return {
+    notificationsEnabled: item.notifications_enabled,
+    calendarMode: 'original',
+    lastSyncAt: item.last_successful_sync_at,
+    lastSyncStatus: null,
+  };
+}
+
+function mapSync(item: BackendSyncRun): SyncResult {
+  const statuses: Record<BackendSyncRun['status'], SyncResult['status']> = {
+    pending: 'queued',
+    running: 'running',
+    succeeded: 'ok',
+    partial: 'partial',
+    failed: 'failed',
+  };
+  return {
+    status: statuses[item.status],
+    finishedAt: item.completed_at,
+    message: item.error,
+  };
+}
+
 export const httpApi: WatchlyApi = {
   login: (email, password) =>
     request<SessionUser>('/auth/login', { method: 'POST', json: { email, password } }),
@@ -224,27 +259,51 @@ export const httpApi: WatchlyApi = {
     }
     return response.results.map(mapSeries);
   },
-  getSeries: (id) => request<SeriesDetail>(`/series/${encodeURIComponent(id)}`),
-  getEpisodes: (id) => request<EpisodeDto[]>(`/series/${encodeURIComponent(id)}/episodes`),
+  getSeries: async (id) =>
+    mapSeriesDetail(await request<BackendSeriesRead>(`/series/${encodeURIComponent(id)}`)),
+  getEpisodes: async (id) => {
+    const response = await request<BackendEpisodeListResponse>(
+      `/series/${encodeURIComponent(id)}/episodes`,
+    );
+    return response.episodes.map(mapEpisode);
+  },
   following: async () => {
     const response = await request<BackendFollowingList>('/me/following');
-    return response.items.map((row) => {
+    return Promise.all(response.items.map(async (row) => {
       const base = mapSeries(row.series);
+      const episodes = await httpApi.getEpisodes(base.id).catch(() => []);
+      const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Rome' }).format(new Date());
+      const nextEpisode = episodes
+        .map((episode) => ({ episode, date: episode.originalAirDate ?? episode.availability.localDate }))
+        .filter((candidate): candidate is { episode: EpisodeDto; date: string } =>
+          !!candidate.date && candidate.date >= today,
+        )
+        .sort((a, b) => a.date.localeCompare(b.date))[0];
       return {
         ...base,
-        nextItalianAvailability: row.next_italy_date
+        nextAvailability: nextEpisode
           ? {
-              country: 'IT',
-              service: null,
-              status: 'confirmed',
-              localDate: row.next_italy_date,
+              country: nextEpisode.episode.originalAirDate ? 'ORIGINAL' : 'IT',
+              service: nextEpisode.episode.availability.service,
+              status: nextEpisode.episode.originalAirDate ? 'original' : nextEpisode.episode.availability.status,
+              localDate: nextEpisode.date,
               precision: 'date',
-              sourceUrl: null,
+              sourceUrl: nextEpisode.episode.availability.sourceUrl,
               lastVerifiedAt: null,
             }
+          : row.next_italy_date
+            ? {
+                country: 'IT',
+                service: null,
+                status: 'confirmed',
+                localDate: row.next_italy_date,
+                precision: 'date',
+                sourceUrl: null,
+                lastVerifiedAt: null,
+              }
           : null,
       };
-    });
+    }));
   },
   follow: (id) => request<void>(`/me/following/${encodeURIComponent(id)}`, { method: 'PUT' }),
   unfollow: (id) => request<void>(`/me/following/${encodeURIComponent(id)}`, { method: 'DELETE' }),
@@ -296,12 +355,23 @@ export const httpApi: WatchlyApi = {
   },
   setWatched: (id, watched) =>
     request<void>(`/me/episodes/${encodeURIComponent(id)}`, { method: 'PATCH', json: { watched } }),
-  sync: (seriesId) =>
-    seriesId
-      ? request<SyncResult>(`/series/${encodeURIComponent(seriesId)}/refresh`, { method: 'POST' })
-      : request<SyncResult>('/me/sync', { method: 'POST' }),
-  getSettings: () => request<UserSettings>('/me/settings'),
-  patchSettings: (patch) => request<UserSettings>('/me/settings', { method: 'PATCH', json: patch }),
+  sync: async (seriesId) =>
+    mapSync(
+      seriesId
+        ? await request<BackendSyncRun>(`/series/${encodeURIComponent(seriesId)}/refresh`, { method: 'POST' })
+        : await request<BackendSyncRun>('/me/sync', { method: 'POST' }),
+    ),
+  getSettings: async () => mapSettings(await request<BackendUserSettings>('/me/settings')),
+  patchSettings: async (patch) => {
+    const json = {
+      ...(patch.notificationsEnabled === undefined
+        ? {}
+        : { notifications_enabled: patch.notificationsEnabled }),
+    };
+    return mapSettings(
+      await request<BackendUserSettings>('/me/settings', { method: 'PATCH', json }),
+    );
+  },
   news: () => request<NewsPage>('/news'),
   registerPush: (sub) => request<{ id: string }>('/me/push-subscriptions', { method: 'POST', json: sub }),
   unregisterPush: (id) =>

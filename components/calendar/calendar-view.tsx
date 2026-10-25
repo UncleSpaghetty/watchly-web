@@ -1,15 +1,15 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 import { AvailabilityBadge } from '@/components/series/availability-badge';
 import { Poster } from '@/components/series/poster';
-import { Chip, SegmentedTabs } from '@/components/ui/controls';
+import { SegmentedTabs } from '@/components/ui/controls';
 import { Button, EmptyState, ErrorState, ListSkeleton, PageHeader, StaleBanner } from '@/components/ui/feedback';
-import { api, type CalendarEntry, type CalendarMode, type SeriesKind } from '@/lib/api';
+import { api, type CalendarEntry } from '@/lib/api';
 import {
   formatLongDate,
   getMonthRange,
@@ -27,33 +27,10 @@ const viewItems: Array<{ value: View; label: string }> = [
   { value: 'month', label: 'Mese' },
 ];
 
-const kindItems: Array<{ value: SeriesKind | 'all'; label: string }> = [
-  { value: 'all', label: 'Tutte' },
-  { value: 'anime', label: 'Anime' },
-  { value: 'tv', label: 'Serie TV' },
-];
-
-const modeItems: Array<{ value: CalendarMode; label: string }> = [
-  { value: 'italy', label: 'Italia' },
-  { value: 'original', label: 'Originale' },
-];
-
 export function CalendarView() {
-  const qc = useQueryClient();
   const [view, setView] = useState<View>('week');
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<string>(() => getRomeTodayIso());
-  const [kind, setKind] = useState<SeriesKind | 'all'>('all');
-  const [hideWatched, setHideWatched] = useState(false);
-
-  const settings = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings() });
-  const mode: CalendarMode = settings.data?.calendarMode ?? 'italy';
-  const setMode = useMutation({
-    mutationFn: (calendarMode: CalendarMode) => api.patchSettings({ calendarMode }),
-    onSuccess: (data) => {
-      qc.setQueryData(['settings'], data);
-    },
-  });
 
   const week = useMemo(() => getRomeCalendarWeek(offset), [offset]);
   const month = useMemo(() => getRomeCalendarMonth(offset), [offset]);
@@ -61,19 +38,12 @@ export function CalendarView() {
   const label = view === 'week' ? week.label : month.label;
 
   const calendar = useQuery({
-    queryKey: ['calendar', range.from, range.to, mode],
-    queryFn: () => api.calendar(range.from, range.to, mode),
-    enabled: settings.isSuccess || settings.isError,
+    queryKey: ['calendar', range.from, range.to, 'original'],
+    queryFn: () => api.calendar(range.from, range.to, 'original'),
   });
   const watched = useWatchedMutation();
 
-  const entries = useMemo(
-    () =>
-      (calendar.data?.entries ?? []).filter(
-        (e) => (kind === 'all' || e.series.kind === kind) && !(hideWatched && e.watchedAt),
-      ),
-    [calendar.data, kind, hideWatched],
-  );
+  const entries = useMemo(() => calendar.data?.entries ?? [], [calendar.data]);
   const byDay = useMemo(() => {
     const map = new Map<string, CalendarEntry[]>();
     for (const e of entries) map.set(e.date, [...(map.get(e.date) ?? []), e]);
@@ -153,46 +123,7 @@ export function CalendarView() {
           : month.days.map((d, i) => (d ? dayCell(d.iso, d.day) : <span key={`pad-${i}`} />))}
       </div>
 
-      <div className="mt-5 space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-[13px] text-muted">Categoria</p>
-          {kindItems.map((item) => (
-            <Chip key={item.value} selected={kind === item.value} onClick={() => setKind(item.value)}>
-              {item.label}
-            </Chip>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-[13px] text-muted">Date</p>
-          {modeItems.map((item) => (
-            <Chip
-              key={item.value}
-              selected={mode === item.value}
-              onClick={() => setMode.mutate(item.value)}
-            >
-              {item.label}
-            </Chip>
-          ))}
-        </div>
-
-        <label className="flex items-center gap-3 text-sm">
-          <input
-            type="checkbox"
-            checked={hideWatched}
-            onChange={(e) => setHideWatched(e.target.checked)}
-            className="h-5 w-5 accent-primary"
-          />
-          Nascondi visti
-        </label>
-      </div>
-
       {calendar.data?.stale ? <StaleBanner lastSyncAt={calendar.data.lastSuccessfulSyncAt} /> : null}
-      {mode === 'original' ? (
-        <p className="mb-3 text-xs text-muted">
-          Sono mostrate le date di prima trasmissione originale, non quelle di disponibilità in Italia.
-        </p>
-      ) : null}
 
       <h2 className="mb-3 mt-6 text-[17px] font-bold capitalize">{formatLongDate(selected)}</h2>
       {calendar.isPending ? (
@@ -200,10 +131,7 @@ export function CalendarView() {
       ) : calendar.isError ? (
         <ErrorState error={calendar.error} onRetry={() => void calendar.refetch()} />
       ) : selectedEntries.length === 0 ? (
-        <EmptyState
-          title="Nessun episodio in questo giorno"
-          hint={mode === 'italy' ? 'Mostriamo solo episodi con una data italiana disponibile.' : undefined}
-        />
+        <EmptyState title="Nessun episodio in questo giorno" />
       ) : (
         <ul className="space-y-3">
           {selectedEntries.map((e) => (

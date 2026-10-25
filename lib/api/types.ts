@@ -84,7 +84,7 @@ export interface CalendarResponse {
 }
 
 export interface FollowingItem extends SeriesSummary {
-  nextItalianAvailability: Availability | null;
+  nextAvailability: Availability | null;
 }
 
 export interface UserSettings {
@@ -117,8 +117,8 @@ export interface SessionUser {
 }
 
 export interface SyncResult {
-  status: 'ok' | 'partial' | 'failed';
-  finishedAt: string;
+  status: 'queued' | 'running' | 'ok' | 'partial' | 'failed';
+  finishedAt: string | null;
   message: string | null;
 }
 

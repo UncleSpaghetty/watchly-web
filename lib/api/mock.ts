@@ -172,7 +172,7 @@ export const mockApi: WatchlyApi = {
     const s = requireAuth();
     return s.following.flatMap((id) => {
       const entry = catalogById.get(id);
-      return entry ? [{ ...toSummary(entry, s.following), nextItalianAvailability: nextItalian(entry) }] : [];
+      return entry ? [{ ...toSummary(entry, s.following), nextAvailability: nextItalian(entry) }] : [];
     });
   },
   async follow(id) {
