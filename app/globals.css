@@ -19,7 +19,17 @@ html {
 body {
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
 :focus-visible {
@@ -31,5 +41,320 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 .pt-safe {
-  padding-top: env(safe-area-inset-top);
+  padding-top: 30px;
+}
+
+.app-shell {
+  isolation: isolate;
+  position: relative;
+}
+
+.app-shell::before {
+  animation: atmosphere-drift 24s ease-in-out infinite alternate;
+  background-image:
+    linear-gradient(180deg, rgb(15 21 18 / 8%) 0%, rgb(15 21 18 / 58%) 62%, var(--color-background) 100%),
+    url('/images/watchly-night-city.jpg');
+  background-position: 72% top;
+  background-repeat: no-repeat;
+  background-size: cover;
+  content: '';
+  height: min(72vh, 680px);
+  inset: 0 0 auto;
+  opacity: 0.58;
+  pointer-events: none;
+  position: fixed;
+  transform: scale(1.025);
+  transform-origin: top center;
+  z-index: -2;
+}
+
+.app-shell::after {
+  background:
+    radial-gradient(circle at 22% 18%, rgb(111 191 146 / 10%), transparent 28rem),
+    linear-gradient(90deg, rgb(15 21 18 / 74%) 0%, transparent 45%, rgb(15 21 18 / 12%) 100%);
+  content: '';
+  height: min(76vh, 720px);
+  inset: 0 0 auto;
+  pointer-events: none;
+  position: fixed;
+  z-index: -1;
+}
+
+.app-nav {
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  backdrop-filter: blur(18px) saturate(1.15);
+  box-shadow: 0 -8px 30px rgb(0 0 0 / 12%);
+}
+
+.app-nav-link {
+  position: relative;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.app-nav-link:hover svg,
+.app-nav-link-active svg {
+  transform: translateY(-1px) scale(1.06);
+}
+
+.app-nav-link svg {
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.page-enter {
+  animation: page-enter 460ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.page-heading {
+  position: relative;
+}
+
+.page-heading::after {
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent), transparent);
+  border-radius: 999px;
+  bottom: -0.75rem;
+  content: '';
+  height: 2px;
+  left: 0;
+  opacity: 0.62;
+  position: absolute;
+  width: 4.5rem;
+}
+
+.motion-card {
+  box-shadow: 0 12px 30px rgb(0 0 0 / 10%);
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 220ms ease,
+    background-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.motion-card:hover {
+  background-color: color-mix(in srgb, var(--color-surface) 84%, var(--color-soft));
+  border-color: color-mix(in srgb, var(--color-primary) 32%, var(--color-border));
+  box-shadow: 0 18px 38px rgb(0 0 0 / 18%);
+  transform: translateY(-2px);
+}
+
+.poster-frame {
+  box-shadow: 0 8px 18px rgb(0 0 0 / 28%);
+}
+
+.calendar-panel,
+.detail-hero {
+  backdrop-filter: blur(14px) saturate(1.08);
+  box-shadow: 0 18px 44px rgb(0 0 0 / 18%);
+}
+
+.calendar-day {
+  border: 1px solid transparent;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.calendar-day:not(:disabled):not(.calendar-day-selected):hover {
+  background: var(--color-soft);
+  border-color: var(--color-border);
+  transform: translateY(-2px);
+}
+
+.calendar-day:disabled {
+  color: color-mix(in srgb, var(--color-muted) 58%, transparent);
+  cursor: default;
+}
+
+.calendar-day-today:not(.calendar-day-selected) {
+  background: var(--color-soft);
+  color: var(--color-primary);
+}
+
+.calendar-day-selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 6px 18px rgb(111 191 146 / 24%);
+  transform: translateY(-2px);
+}
+
+.episode-row {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-surface) 95%, transparent);
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+  border-radius: 14px;
+  display: flex;
+  gap: 0.875rem;
+  padding: 0.875rem;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.episode-row:hover {
+  background: var(--color-soft);
+  transform: translateX(2px);
+}
+
+.episode-row-past {
+  border-left-color: var(--color-border);
+}
+
+.episode-row-upcoming {
+  border-left-color: var(--color-primary);
+}
+
+.watch-status {
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-muted);
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  gap: 0.3rem;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.8rem;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.watch-status:not(:disabled):hover {
+  border-color: var(--color-primary);
+  color: var(--color-foreground);
+  transform: translateY(-1px);
+}
+
+.watch-status-on {
+  animation: status-pop 300ms cubic-bezier(0.2, 0.9, 0.25, 1.25);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-background);
+}
+
+.watch-status:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.follow-button svg {
+  transition:
+    fill 180ms ease,
+    transform 220ms cubic-bezier(0.2, 0.9, 0.25, 1.25);
+}
+
+.follow-button[aria-pressed='true'] svg {
+  animation: status-pop 300ms cubic-bezier(0.2, 0.9, 0.25, 1.25);
+}
+
+.detail-hero {
+  position: relative;
+}
+
+.detail-hero::after {
+  background: radial-gradient(circle, rgb(111 191 146 / 20%), transparent 68%);
+  content: '';
+  height: 13rem;
+  pointer-events: none;
+  position: absolute;
+  right: -5rem;
+  top: -6rem;
+  width: 13rem;
+}
+
+.list-reveal {
+  animation: list-reveal 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes atmosphere-drift {
+  from {
+    background-position: 72% top;
+    transform: scale(1.025);
+  }
+  to {
+    background-position: 67% top;
+    transform: scale(1.055);
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes list-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes status-pop {
+  0% {
+    transform: scale(0.92);
+  }
+  70% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 440px) {
+  .episode-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .episode-row .watch-status {
+    margin-left: 3.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell::before,
+  .follow-button[aria-pressed='true'] svg,
+  .list-reveal,
+  .page-enter,
+  .watch-status-on {
+    animation: none;
+  }
+
+  .list-reveal,
+  .page-enter {
+    opacity: 1;
+    transform: none;
+  }
+
+  .app-nav-link,
+  .app-nav-link svg,
+  .calendar-day,
+  .episode-row,
+  .motion-card,
+  .watch-status {
+    scroll-behavior: auto;
+    transition-duration: 0.01ms;
+  }
 }

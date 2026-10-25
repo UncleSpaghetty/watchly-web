@@ -1,4 +1,4 @@
-const VERSION = 'v1';
+const VERSION = 'v2';
 const STATIC_CACHE = `watchly-static-${VERSION}`;
 const PAGES_CACHE = `watchly-pages-${VERSION}`;
 
@@ -28,7 +28,11 @@ self.addEventListener('fetch', (event) => {
   // Solo risorse same-origin: le API (dati personali) non vengono mai messe in cache dal SW
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
 
-  if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/icons/')) {
+  if (
+    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.startsWith('/icons/') ||
+    url.pathname.startsWith('/images/')
+  ) {
     event.respondWith(
       caches.open(STATIC_CACHE).then(async (cache) => {
         const hit = await cache.match(request);

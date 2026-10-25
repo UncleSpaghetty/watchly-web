@@ -18,11 +18,9 @@ export function PageHeader({
   const titleClassName = `${eyebrow ? 'mt-2 ' : ''}text-3xl font-bold leading-tight`;
 
   return (
-    <div className="mb-6 flex items-start justify-between gap-3">
+    <div className="page-heading mb-6 flex items-start justify-between gap-3">
       <div>
-        {eyebrow ? (
-          <p className="text-xs font-bold tracking-[0.2em] text-primary">{eyebrow}</p>
-        ) : null}
+        {eyebrow ? <p className="text-xs font-bold tracking-[0.2em] text-primary">{eyebrow}</p> : null}
         <h1 className={titleClassName}>{title}</h1>
         {subtitle ? <p className="mt-1 text-[15px] leading-6 text-muted">{subtitle}</p> : null}
       </div>
@@ -81,7 +79,9 @@ export function Button({
   variant = 'primary',
   className = '',
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'ghost' | 'danger' }) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: 'primary' | 'ghost' | 'danger';
+}) {
   const styles = {
     primary: 'border-primary bg-primary text-background hover:opacity-90',
     ghost: 'border-border bg-transparent text-foreground hover:bg-soft',
@@ -92,7 +92,7 @@ export function Button({
     <button
       type="button"
       {...props}
-      className={`inline-flex min-h-11 items-center justify-center rounded-[14px] border px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${styles} ${className}`}
+      className={`inline-flex min-h-11 items-center justify-center rounded-[14px] border px-4 py-2.5 text-sm font-semibold transition-[transform,background-color,border-color,opacity] duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 ${styles} ${className}`}
     />
   );
 }

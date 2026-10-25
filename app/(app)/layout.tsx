@@ -11,7 +11,12 @@ import { api, ApiError } from '@/lib/api';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const me = useQuery({ queryKey: ['me'], queryFn: () => api.me(), retry: false, staleTime: 5 * 60_000 });
+  const me = useQuery({
+    queryKey: ['me'],
+    queryFn: () => api.me(),
+    retry: false,
+    staleTime: 5 * 60_000,
+  });
   const unauthorized = me.error instanceof ApiError && me.error.status === 401;
 
   useEffect(() => {
@@ -27,11 +32,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-dvh md:flex mt-4">
+    <div className="app-shell min-h-dvh md:flex">
       <AppNav />
-      <main className="pt-safe mx-auto w-full max-w-3xl flex-1 px-[22px] pb-28 pt-[18px] md:pb-10">
+      <main className="pt-safe relative z-10 mx-auto w-full max-w-3xl flex-1 px-[22px] pb-28 pt-8 md:pb-10 md:pt-12">
         <OfflineBanner />
-        {children}
+        <div className="page-enter">{children}</div>
       </main>
     </div>
   );

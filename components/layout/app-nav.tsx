@@ -19,7 +19,7 @@ export function AppNav() {
   return (
     <nav
       aria-label="Navigazione principale"
-      className="pb-safe fixed inset-x-0 bottom-0 z-20 flex border-t border-border bg-surface md:static md:inset-auto md:w-56 md:shrink-0 md:flex-col md:gap-1 md:border-r md:border-t-0 md:p-3"
+      className="app-nav pb-safe fixed inset-x-0 bottom-0 z-20 flex border-t border-border md:sticky md:top-0 md:h-dvh md:w-56 md:shrink-0 md:flex-col md:gap-1 md:border-r md:border-t-0 md:p-3"
     >
       <span className="hidden px-3 py-4 text-xl font-bold text-primary md:block">Watchly</span>
       {items.map(({ href, label, Icon }) => {
@@ -29,8 +29,8 @@ export function AppNav() {
             key={href}
             href={href}
             aria-current={active ? 'page' : undefined}
-            className={`flex flex-1 flex-col items-center gap-1 px-1 py-2 text-[10px] md:flex-none md:flex-row md:gap-3 md:rounded-[14px] md:px-3 md:py-2.5 md:text-sm ${
-              active ? 'text-primary md:bg-soft' : 'text-muted hover:text-foreground'
+            className={`app-nav-link flex flex-1 flex-col items-center gap-1 px-1 py-2 text-[10px] md:flex-none md:flex-row md:gap-3 md:rounded-[14px] md:px-3 md:py-2.5 md:text-sm ${
+              active ? 'app-nav-link-active text-primary md:bg-soft' : 'text-muted hover:text-foreground'
             }`}
           >
             <Icon size={22} aria-hidden />
