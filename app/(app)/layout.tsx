@@ -27,7 +27,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-dvh md:flex">
+    <div className="min-h-dvh md:flex mt-4">
       <AppNav />
       <main className="pt-safe mx-auto w-full max-w-3xl flex-1 px-[22px] pb-28 pt-[18px] md:pb-10">
         <OfflineBanner />

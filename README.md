@@ -10,10 +10,11 @@ npm install
 npm run dev        # http://localhost:3000
 ```
 
-Con `NEXT_PUBLIC_API_MOCK=true` (default in `.env.example`) l'app usa un backend simulato nel browser
-(dati **fittizi**, stato in `localStorage`; qualsiasi credenziale è accettata). Per usare `watchly-be`
-imposta `NEXT_PUBLIC_API_MOCK=false` e `NEXT_PUBLIC_API_BASE_URL`; il contratto è in `lib/api/types.ts`
-e `lib/api/http.ts` (sessione via cookie `HttpOnly`, `credentials: 'include'`).
+Il default di `.env.example` usa `watchly-be` locale su `http://localhost:8000/api/v1`.
+In sviluppo, lo stesso URL viene usato come fallback quando `NEXT_PUBLIC_API_BASE_URL` non è definita.
+Per lavorare senza backend imposta `NEXT_PUBLIC_API_MOCK=true`: l'app userà dati **fittizi** in
+`localStorage` e accetterà qualsiasi credenziale. Il contratto è in `lib/api/types.ts` e
+`lib/api/http.ts` (sessione via cookie `HttpOnly`, `credentials: 'include'`).
 Il login richiede email e password: `POST /auth/login` invia il JSON `{ email, password }`,
 in accordo con il backend. In modalita demo usare un'email valida e una password non vuota.
 
