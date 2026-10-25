@@ -18,7 +18,7 @@ export function PageHeader({
   const titleClassName = `${eyebrow ? 'mt-2 ' : ''}text-3xl font-bold leading-tight`;
 
   return (
-    <div className="page-heading mt-6 mb-6 flex items-start justify-between gap-3">
+    <div className="page-heading mb-6 flex items-start justify-between gap-3">
       <div>
         {eyebrow ? <p className="text-xs font-bold tracking-[0.2em] text-primary">{eyebrow}</p> : null}
         <h1 className={titleClassName}>{title}</h1>
