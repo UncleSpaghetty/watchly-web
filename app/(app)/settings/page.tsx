@@ -13,6 +13,7 @@ import {
   isIOS,
   isStandalone,
   pushSupported,
+  showNotificationPreview,
   subscribeToPush,
   unsubscribeFromPush,
 } from '@/lib/pwa/register';
@@ -89,6 +90,13 @@ export default function SettingsPage() {
     onError: (e) => setPushError(e instanceof Error ? e.message : 'Operazione non riuscita.'),
   });
 
+  const previewPush = useMutation({
+    mutationFn: showNotificationPreview,
+    onMutate: () => setPushError(null),
+    onError: (e) =>
+      setPushError(e instanceof Error ? e.message : 'Impossibile mostrare la notifica di prova.'),
+  });
+
   const logout = useMutation({
     mutationFn: async () => {
       await api.logout();
@@ -129,16 +137,30 @@ export default function SettingsPage() {
           Una notifica alle 12:00 (Europe/Rome) nei giorni con episodi disponibili in Italia confermati,
           solo per le serie seguite.
         </p>
-        <label className="mt-4 flex items-center gap-3 text-sm">
-          <input
-            type="checkbox"
-            checked={s.notificationsEnabled}
-            disabled={pushBlocked || togglePush.isPending}
-            onChange={(e) => togglePush.mutate(e.target.checked)}
-            className="h-5 w-5 accent-primary"
-          />
-          Abilita notifiche
-        </label>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <label className="flex items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={s.notificationsEnabled}
+              disabled={pushBlocked || togglePush.isPending}
+              onChange={(e) => togglePush.mutate(e.target.checked)}
+              className="h-5 w-5 accent-primary"
+            />
+            Abilita notifiche
+          </label>
+          <Button
+            variant="ghost"
+            disabled={
+              !s.notificationsEnabled ||
+              pushBlocked ||
+              permission !== 'granted' ||
+              previewPush.isPending
+            }
+            onClick={() => previewPush.mutate()}
+          >
+            {previewPush.isPending ? 'Invio…' : 'Invia notifica di prova'}
+          </Button>
+        </div>
         {!isSupported ? (
           <p className="mt-3 text-sm text-warn">
             Questo browser non supporta le notifiche push. Le novità restano visibili nell&apos;app.
@@ -157,6 +179,11 @@ export default function SettingsPage() {
         {pushError ? (
           <p role="alert" className="mt-3 text-sm text-accent">
             {pushError}
+          </p>
+        ) : null}
+        {previewPush.isSuccess ? (
+          <p role="status" className="mt-3 text-sm text-muted">
+            Notifica di prova inviata da questo dispositivo, senza contattare il backend.
           </p>
         ) : null}
         {isMockApi ? <p className="mt-3 text-xs text-muted">Modalità demo: nessuna sottoscrizione push reale.</p> : null}
