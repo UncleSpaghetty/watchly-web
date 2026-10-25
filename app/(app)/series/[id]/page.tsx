@@ -41,7 +41,7 @@ export default function SeriesPage() {
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold tracking-[0.2em] text-primary">{s.kind === 'anime' ? 'ANIME' : 'SERIE TV'}</p>
           <h1 className="mt-2 text-2xl font-bold leading-tight">{s.title}</h1>
-          {s.alternativeTitles.length ? (
+          {s.alternativeTitles?.length ? (
             <p className="mt-1 text-sm text-muted">{s.alternativeTitles.join(' · ')}</p>
           ) : null}
           <p className="mt-2 text-sm text-muted">
@@ -63,6 +63,11 @@ export default function SeriesPage() {
         <div className="mb-3">
           <ErrorState error={sync.error} />
         </div>
+      ) : null}
+      {sync.data?.status === 'queued' || sync.data?.status === 'running' ? (
+        <p role="status" className="mb-3 text-sm text-muted">
+          Aggiornamento avviato. I nuovi dati saranno disponibili a breve.
+        </p>
       ) : null}
       {sync.data?.status === 'partial' || sync.data?.status === 'failed' ? (
         <p role="status" className="mb-3 text-sm text-warn">

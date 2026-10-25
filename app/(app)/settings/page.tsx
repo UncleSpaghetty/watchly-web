@@ -182,7 +182,12 @@ export default function SettingsPage() {
             <ErrorState error={sync.error} />
           </div>
         ) : null}
-        {sync.data && sync.data.status !== 'ok' ? (
+        {sync.data?.status === 'queued' || sync.data?.status === 'running' ? (
+          <p role="status" className="mt-3 text-sm text-muted">
+            Aggiornamento avviato. I nuovi dati saranno disponibili a breve.
+          </p>
+        ) : null}
+        {sync.data?.status === 'partial' || sync.data?.status === 'failed' ? (
           <p role="status" className="mt-3 text-sm text-warn">
             Aggiornamento {sync.data.status === 'partial' ? 'parziale' : 'non riuscito'}.
           </p>
