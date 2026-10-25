@@ -29,7 +29,7 @@ export function AppNav() {
             key={href}
             href={href}
             aria-current={active ? 'page' : undefined}
-            className={`flex flex-1 flex-col items-center gap-1 px-1 py-2 text-[10px] md:flex-none md:flex-row md:gap-3 md:rounded-lg md:px-3 md:py-2.5 md:text-sm ${
+            className={`flex flex-1 flex-col items-center gap-1 px-1 py-2 text-[10px] md:flex-none md:flex-row md:gap-3 md:rounded-[14px] md:px-3 md:py-2.5 md:text-sm ${
               active ? 'text-primary md:bg-soft' : 'text-muted hover:text-foreground'
             }`}
           >

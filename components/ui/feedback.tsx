@@ -2,17 +2,37 @@ import type { ReactNode } from 'react';
 
 import { formatDateTime } from '@/lib/date/italy';
 
-export function PageHeader({ title, actions }: { title: string; actions?: ReactNode }) {
+import { Card } from './controls';
+
+export function PageHeader({
+  title,
+  subtitle,
+  eyebrow,
+  actions,
+}: {
+  title: string;
+  subtitle?: string;
+  eyebrow?: string;
+  actions?: ReactNode;
+}) {
+  const titleClassName = `${eyebrow ? 'mt-2 ' : ''}text-3xl font-bold leading-tight`;
+
   return (
-    <div className="mb-5 flex items-center justify-between gap-3">
-      <h1 className="text-2xl font-bold">{title}</h1>
+    <div className="mb-6 flex items-start justify-between gap-3">
+      <div>
+        {eyebrow ? (
+          <p className="text-xs font-bold tracking-[0.2em] text-primary">{eyebrow}</p>
+        ) : null}
+        <h1 className={titleClassName}>{title}</h1>
+        {subtitle ? <p className="mt-1 text-[15px] leading-6 text-muted">{subtitle}</p> : null}
+      </div>
       {actions}
     </div>
   );
 }
 
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div aria-hidden className={`animate-pulse rounded-xl bg-soft ${className}`} />;
+  return <div aria-hidden className={`animate-pulse rounded-[16px] bg-soft ${className}`} />;
 }
 
 export function ListSkeleton({ rows = 4 }: { rows?: number }) {
@@ -27,30 +47,30 @@ export function ListSkeleton({ rows = 4 }: { rows?: number }) {
 
 export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-6 text-center">
-      <p className="font-medium">{title}</p>
-      {hint ? <p className="mt-1 text-sm text-muted">{hint}</p> : null}
-    </div>
+    <Card className="text-center">
+      <p className="text-[17px] font-bold">{title}</p>
+      {hint ? <p className="mt-2 text-sm leading-6 text-muted">{hint}</p> : null}
+    </Card>
   );
 }
 
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const message = error instanceof Error ? error.message : 'Si è verificato un errore.';
   return (
-    <div role="alert" className="rounded-xl border border-accent/50 bg-accent/10 p-4">
-      <p className="text-sm">{message}</p>
+    <Card role="alert" className="border-accent/50 bg-accent/10 p-4">
+      <p className="text-sm leading-6">{message}</p>
       {onRetry ? (
-        <button type="button" onClick={onRetry} className="mt-2 text-sm font-medium text-primary underline">
+        <button type="button" onClick={onRetry} className="mt-2 text-sm font-semibold text-primary underline">
           Riprova
         </button>
       ) : null}
-    </div>
+    </Card>
   );
 }
 
 export function StaleBanner({ lastSyncAt }: { lastSyncAt: string | null }) {
   return (
-    <div role="status" className="mb-4 rounded-xl border border-warn/50 bg-warn/10 p-3 text-sm">
+    <div role="status" className="mb-4 rounded-[16px] border border-warn/50 bg-warn/10 p-3 text-sm">
       L&apos;ultimo aggiornamento non è andato a buon fine: i dati potrebbero non essere aggiornati
       {lastSyncAt ? ` (ultimo riuscito: ${formatDateTime(lastSyncAt)})` : ''}.
     </div>
@@ -63,15 +83,16 @@ export function Button({
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'ghost' | 'danger' }) {
   const styles = {
-    primary: 'bg-primary text-background hover:opacity-90',
-    ghost: 'border border-border bg-surface hover:bg-soft',
-    danger: 'border border-accent/60 text-accent hover:bg-accent/10',
+    primary: 'border-primary bg-primary text-background hover:opacity-90',
+    ghost: 'border-border bg-transparent text-foreground hover:bg-soft',
+    danger: 'border-accent/70 bg-transparent text-accent hover:bg-accent/10',
   }[variant];
+
   return (
     <button
       type="button"
       {...props}
-      className={`inline-flex min-h-10 items-center justify-center rounded-lg px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${styles} ${className}`}
+      className={`inline-flex min-h-11 items-center justify-center rounded-[14px] border px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${styles} ${className}`}
     />
   );
 }

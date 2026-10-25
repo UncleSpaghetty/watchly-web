@@ -23,13 +23,13 @@ export function FollowButton({ seriesId, following }: { seriesId: string; follow
 
 export function SeriesCard({ series, footer }: { series: SeriesSummary; footer?: React.ReactNode }) {
   return (
-    <li className="flex gap-3 rounded-xl border border-border bg-surface p-3">
+    <li className="flex gap-3 rounded-[14px] border border-border bg-surface p-2.5">
       <Poster url={series.posterUrl} title={series.title} />
       <div className="min-w-0 flex-1">
-        <Link href={`/series/${series.id}`} className="block truncate font-semibold hover:underline">
+        <Link href={`/series/${series.id}`} className="block truncate text-[16px] font-bold hover:underline">
           {series.title}
         </Link>
-        <p className="text-sm text-muted">
+        <p className="mt-0.5 text-[13px] text-muted">
           {series.kind === 'anime' ? 'Anime' : 'Serie TV'}
           {series.format ? ` · ${series.format}` : ''}
           {series.year ? ` · ${series.year}` : ''} · {sourceLabels[series.source]}

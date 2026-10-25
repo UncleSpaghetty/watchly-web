@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { TextField } from '@/components/ui/controls';
 import { Button } from '@/components/ui/feedback';
 import { api, isMockApi } from '@/lib/api';
 
@@ -36,11 +37,11 @@ export default function LoginPage() {
       <form onSubmit={onSubmit} className="space-y-4">
         <label className="block text-sm">
           Email
-          <input name="email" type="email" required autoComplete="username" className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5" />
+          <TextField name="email" type="email" required autoComplete="username" className="mt-1" />
         </label>
         <label className="block text-sm">
           Password
-          <input name="password" type="password" required autoComplete="current-password" className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5" />
+          <TextField name="password" type="password" required autoComplete="current-password" className="mt-1" />
         </label>
         {error ? (
           <p role="alert" className="text-sm text-accent">

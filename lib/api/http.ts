@@ -23,13 +23,22 @@ interface BackendSeries {
   id: string;
   kind: SeriesKind;
   title: string;
-  alternative_titles: string[];
+  alternative_titles: unknown;
   poster_url: string | null;
   synopsis: string | null;
   format: string | null;
   year: number | null;
   external_ids: BackendExternalId[];
   followed: boolean;
+}
+
+interface BackendFollowingRead {
+  series: BackendSeries;
+  next_italy_date: string | null;
+}
+
+interface BackendFollowingList {
+  items: BackendFollowingRead[];
 }
 
 interface BackendSearchResponse {
@@ -112,10 +121,13 @@ const qs = (params: Record<string, string | undefined>) => {
 
 function mapSeries(item: BackendSeries): SeriesSummary {
   const external = item.external_ids[0];
+  const alternativeTitles = Array.isArray(item.alternative_titles)
+    ? item.alternative_titles.filter((t): t is string => typeof t === 'string' && t.length > 0)
+    : [];
   return {
     id: item.id,
     title: item.title,
-    alternativeTitles: item.alternative_titles,
+    alternativeTitles,
     kind: item.kind,
     source: external?.source ?? (item.kind === 'tv' ? 'tmdb' : 'anilist'),
     externalId: external?.external_id ?? '',
@@ -144,7 +156,26 @@ export const httpApi: WatchlyApi = {
   },
   getSeries: (id) => request<SeriesDetail>(`/series/${encodeURIComponent(id)}`),
   getEpisodes: (id) => request<EpisodeDto[]>(`/series/${encodeURIComponent(id)}/episodes`),
-  following: () => request<FollowingItem[]>('/me/following'),
+  following: async () => {
+    const response = await request<BackendFollowingList>('/me/following');
+    return response.items.map((row) => {
+      const base = mapSeries(row.series);
+      return {
+        ...base,
+        nextItalianAvailability: row.next_italy_date
+          ? {
+              country: 'IT',
+              service: null,
+              status: 'confirmed',
+              localDate: row.next_italy_date,
+              precision: 'date',
+              sourceUrl: null,
+              lastVerifiedAt: null,
+            }
+          : null,
+      };
+    });
+  },
   follow: (id) => request<void>(`/me/following/${encodeURIComponent(id)}`, { method: 'PUT' }),
   unfollow: (id) => request<void>(`/me/following/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   calendar: async (from, to, mode) => {
