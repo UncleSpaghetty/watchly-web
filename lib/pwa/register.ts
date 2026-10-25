@@ -1,3 +1,5 @@
+import { getRomeTodayIso } from '@/lib/date/italy';
+
 export function registerServiceWorker() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
   if (process.env.NODE_ENV !== 'production') return;
@@ -50,4 +52,35 @@ export async function unsubscribeFromPush(): Promise<void> {
   const registration = await navigator.serviceWorker.ready;
   const sub = await registration.pushManager.getSubscription();
   await sub?.unsubscribe();
+}
+
+/** Mostra una notifica di esempio sul dispositivo senza passare dal backend. */
+export async function showNotificationPreview(): Promise<void> {
+  if (!pushSupported() || Notification.permission !== 'granted') {
+    throw new Error('Abilita prima le notifiche per inviare una prova.');
+  }
+
+  const date = getRomeTodayIso();
+  const title = 'Watchly · oggi in Italia';
+  const options: NotificationOptions = {
+    body: '2 episodi in programma oggi: Solo Leveling, The Last of Us',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    tag: 'watchly-preview',
+    data: { url: `/?date=${date}` },
+  };
+  const registration = await navigator.serviceWorker.getRegistration('/');
+
+  if (registration) {
+    await registration.showNotification(title, options);
+    return;
+  }
+
+  // Fallback utile in sviluppo, dove il service worker non viene registrato.
+  const notification = new Notification(title, options);
+  notification.onclick = () => {
+    window.focus();
+    window.open(`/?date=${date}`, '_self');
+    notification.close();
+  };
 }
