@@ -7,7 +7,8 @@ import { useMemo, useState } from 'react';
 
 import { AvailabilityBadge } from '@/components/series/availability-badge';
 import { Poster } from '@/components/series/poster';
-import { Button, EmptyState, ErrorState, ListSkeleton, StaleBanner } from '@/components/ui/feedback';
+import { Chip, SegmentedTabs } from '@/components/ui/controls';
+import { Button, EmptyState, ErrorState, ListSkeleton, PageHeader, StaleBanner } from '@/components/ui/feedback';
 import { api, type CalendarEntry, type CalendarMode, type SeriesKind } from '@/lib/api';
 import {
   formatLongDate,
@@ -20,6 +21,22 @@ import { useWatchedMutation } from '@/lib/hooks';
 
 type View = 'week' | 'month';
 const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+
+const viewItems: Array<{ value: View; label: string }> = [
+  { value: 'week', label: 'Settimana' },
+  { value: 'month', label: 'Mese' },
+];
+
+const kindItems: Array<{ value: SeriesKind | 'all'; label: string }> = [
+  { value: 'all', label: 'Tutte' },
+  { value: 'anime', label: 'Anime' },
+  { value: 'tv', label: 'Serie TV' },
+];
+
+const modeItems: Array<{ value: CalendarMode; label: string }> = [
+  { value: 'italy', label: 'Italia' },
+  { value: 'original', label: 'Originale' },
+];
 
 export function CalendarView() {
   const qc = useQueryClient();
@@ -92,9 +109,9 @@ export function CalendarView() {
         onClick={() => setSelected(iso)}
         aria-pressed={isSelected}
         aria-label={`${formatLongDate(iso)}${count ? `, ${count} episodi` : ''}`}
-        className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg border text-sm ${
-          isSelected ? 'border-primary bg-primary/15' : 'border-border bg-surface hover:bg-soft'
-        } ${iso === today ? 'font-bold text-primary' : ''}`}
+        className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-[14px] border text-sm ${
+          isSelected ? 'border-primary bg-soft text-primary' : 'border-border bg-surface hover:bg-soft'
+        } ${iso === today ? 'font-bold' : ''}`}
       >
         {day}
         <span className={`h-1.5 w-1.5 rounded-full ${count ? 'bg-accent' : 'bg-transparent'}`} />
@@ -104,67 +121,80 @@ export function CalendarView() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Calendario</h1>
-        <div role="group" aria-label="Vista" className="flex gap-1">
-          {(['week', 'month'] as const).map((v) => (
-            <Button key={v} variant={view === v ? 'primary' : 'ghost'} aria-pressed={view === v} onClick={() => changeView(v)}>
-              {v === 'week' ? 'Settimana' : 'Mese'}
-            </Button>
-          ))}
-        </div>
-      </div>
+      <PageHeader eyebrow="WATCHLY" title="Calendario" subtitle="Uscite degli episodi che segui" />
 
-      <div className="mb-3 flex items-center justify-between">
-        <Button variant="ghost" aria-label="Periodo precedente" onClick={() => move(-1)}>
+      <SegmentedTabs value={view} ariaLabel="Vista" items={viewItems} onChange={changeView} />
+
+      <div className="mt-4 flex items-center justify-between">
+        <Button variant="ghost" aria-label="Periodo precedente" onClick={() => move(-1)} className="px-3">
           <ChevronLeft size={18} />
         </Button>
         <div className="text-center">
           <p className="font-semibold capitalize">{label}</p>
           {offset !== 0 ? (
-            <button type="button" className="text-xs text-primary underline" onClick={() => changeView(view)}>
+            <button type="button" className="text-xs font-semibold text-primary underline" onClick={() => changeView(view)}>
               Torna a oggi
             </button>
           ) : null}
         </div>
-        <Button variant="ghost" aria-label="Periodo successivo" onClick={() => move(1)}>
+        <Button variant="ghost" aria-label="Periodo successivo" onClick={() => move(1)} className="px-3">
           <ChevronRight size={18} />
         </Button>
       </div>
 
-      <div className="mb-1 grid grid-cols-7 gap-1.5 text-center text-xs text-muted" aria-hidden>
+      <div className="mt-3 grid grid-cols-7 gap-1.5 text-center text-xs text-muted" aria-hidden>
         {WEEKDAYS.map((d) => (
           <span key={d}>{d}</span>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="mt-1 grid grid-cols-7 gap-1.5">
         {view === 'week'
           ? week.days.map((d) => dayCell(d.iso, d.day))
           : month.days.map((d, i) => (d ? dayCell(d.iso, d.day) : <span key={`pad-${i}`} />))}
       </div>
 
-      <div className="my-4 flex flex-wrap items-center gap-2 text-sm">
-        <select aria-label="Filtro categoria" value={kind} onChange={(e) => setKind(e.target.value as SeriesKind | 'all')} className="rounded-lg border border-border bg-surface px-2 py-2">
-          <option value="all">Tutte</option>
-          <option value="anime">Anime</option>
-          <option value="tv">Serie TV</option>
-        </select>
-        <select aria-label="Tipo di date" value={mode} onChange={(e) => setMode.mutate(e.target.value as CalendarMode)} className="rounded-lg border border-border bg-surface px-2 py-2">
-          <option value="italy">Disponibilità in Italia</option>
-          <option value="original">Programmazione originale</option>
-        </select>
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={hideWatched} onChange={(e) => setHideWatched(e.target.checked)} />
+      <div className="mt-5 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-[13px] text-muted">Categoria</p>
+          {kindItems.map((item) => (
+            <Chip key={item.value} selected={kind === item.value} onClick={() => setKind(item.value)}>
+              {item.label}
+            </Chip>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-[13px] text-muted">Date</p>
+          {modeItems.map((item) => (
+            <Chip
+              key={item.value}
+              selected={mode === item.value}
+              onClick={() => setMode.mutate(item.value)}
+            >
+              {item.label}
+            </Chip>
+          ))}
+        </div>
+
+        <label className="flex items-center gap-3 text-sm">
+          <input
+            type="checkbox"
+            checked={hideWatched}
+            onChange={(e) => setHideWatched(e.target.checked)}
+            className="h-5 w-5 accent-primary"
+          />
           Nascondi visti
         </label>
       </div>
 
       {calendar.data?.stale ? <StaleBanner lastSyncAt={calendar.data.lastSuccessfulSyncAt} /> : null}
       {mode === 'original' ? (
-        <p className="mb-3 text-xs text-muted">Sono mostrate le date di prima trasmissione originale, non quelle di disponibilità in Italia.</p>
+        <p className="mb-3 text-xs text-muted">
+          Sono mostrate le date di prima trasmissione originale, non quelle di disponibilità in Italia.
+        </p>
       ) : null}
 
-      <h2 className="mb-3 font-semibold capitalize">{formatLongDate(selected)}</h2>
+      <h2 className="mb-3 mt-6 text-[17px] font-bold capitalize">{formatLongDate(selected)}</h2>
       {calendar.isPending ? (
         <ListSkeleton rows={2} />
       ) : calendar.isError ? (
@@ -177,18 +207,18 @@ export function CalendarView() {
       ) : (
         <ul className="space-y-3">
           {selectedEntries.map((e) => (
-            <li key={e.episodeId} className="flex gap-3 rounded-xl border border-border bg-surface p-3">
+            <li key={e.episodeId} className="flex gap-3 rounded-[14px] border border-border bg-surface p-2.5">
               <Poster url={e.series.posterUrl} title={e.series.title} />
               <div className="min-w-0 flex-1">
-                <Link href={`/series/${e.series.id}`} className="block truncate font-semibold hover:underline">
+                <Link href={`/series/${e.series.id}`} className="block truncate text-[16px] font-bold hover:underline">
                   {e.series.title}
                 </Link>
-                <p className="text-sm text-muted">
+                <p className="mt-0.5 text-[13px] text-muted">
                   {e.seasonNumber ? `S${e.seasonNumber} · ` : ''}
                   {e.episodeNumber ? `Ep. ${e.episodeNumber}` : 'Episodio'}
                   {e.episodeTitle ? ` — ${e.episodeTitle}` : ''}
                 </p>
-                <div className="mt-1.5">
+                <div className="mt-2">
                   <AvailabilityBadge availability={e.availability} />
                 </div>
               </div>
@@ -203,7 +233,11 @@ export function CalendarView() {
           ))}
         </ul>
       )}
-      {watched.isError ? <div className="mt-3"><ErrorState error={watched.error} /></div> : null}
+      {watched.isError ? (
+        <div className="mt-3">
+          <ErrorState error={watched.error} />
+        </div>
+      ) : null}
     </div>
   );
 }

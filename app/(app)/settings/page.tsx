@@ -4,11 +4,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState, useSyncExternalStore } from 'react';
 
+import { Card } from '@/components/ui/controls';
 import { Button, ErrorState, ListSkeleton, PageHeader } from '@/components/ui/feedback';
 import { api, isMockApi } from '@/lib/api';
 import { formatDateTime } from '@/lib/date/italy';
 import { useSyncMutation } from '@/lib/hooks';
-import { isIOS, isStandalone, pushSupported, subscribeToPush, unsubscribeFromPush } from '@/lib/pwa/register';
+import {
+  isIOS,
+  isStandalone,
+  pushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from '@/lib/pwa/register';
 
 const PUSH_ID_KEY = 'watchly-push-id';
 const VAPID = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '';
@@ -40,20 +47,34 @@ export default function SettingsPage() {
     () => 'ssr',
   ).split('|') as [string, string, string];
   const [permissionOverride, setPermission] = useState<NotificationPermission | null>(null);
-  const permission = permissionOverride ?? (initialPermission as NotificationPermission | 'unsupported' | 'ssr');
+  const permission =
+    permissionOverride ?? (initialPermission as NotificationPermission | 'unsupported' | 'ssr');
   const isSupported = supported === '1';
+  const pushBlocked = !isSupported || needsInstall === '1' || permission === 'denied';
+
   const togglePush = useMutation({
     mutationFn: async (enable: boolean) => {
       setPushError(null);
       if (enable) {
         const result = await Notification.requestPermission();
         setPermission(result);
-        if (result !== 'granted') throw new Error('Permesso notifiche negato. Puoi riattivarlo dalle impostazioni del browser.');
+        if (result !== 'granted') {
+          throw new Error(
+            'Permesso notifiche negato. Puoi riattivarlo dalle impostazioni del browser.',
+          );
+        }
         if (!isMockApi) {
-          if (!VAPID || VAPID === 'replace-me') throw new Error('Notifiche non configurate (chiave VAPID mancante).');
+          if (!VAPID || VAPID === 'replace-me') {
+            throw new Error('Notifiche non configurate (chiave VAPID mancante).');
+          }
           const json = await subscribeToPush(VAPID);
-          if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) throw new Error('Sottoscrizione push non valida.');
-          const { id } = await api.registerPush({ endpoint: json.endpoint, keys: { p256dh: json.keys.p256dh, auth: json.keys.auth } });
+          if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) {
+            throw new Error('Sottoscrizione push non valida.');
+          }
+          const { id } = await api.registerPush({
+            endpoint: json.endpoint,
+            keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
+          });
           localStorage.setItem(PUSH_ID_KEY, id);
         }
       } else {
@@ -88,60 +109,95 @@ export default function SettingsPage() {
   });
 
   if (settings.isPending) return <ListSkeleton rows={3} />;
-  if (settings.isError) return <ErrorState error={settings.error} onRetry={() => void settings.refetch()} />;
+  if (settings.isError) {
+    return <ErrorState error={settings.error} onRetry={() => void settings.refetch()} />;
+  }
+
   const s = settings.data;
-  const pushBlocked = !isSupported || needsInstall === '1' || permission === 'denied';
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Impostazioni" />
+      <PageHeader
+        eyebrow="PREFERENZE"
+        title="Impostazioni"
+        subtitle="Lingua, notifiche e stato dei dati."
+      />
 
-      <section className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-1 font-semibold">Notifiche</h2>
-        <p className="mb-3 text-sm text-muted">
-          Una notifica alle 12:00 (Europe/Rome) nei giorni con episodi disponibili in Italia confermati, solo per le serie seguite.
+      <Card>
+        <h2 className="text-[16px] font-bold">Notifiche</h2>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          Una notifica alle 12:00 (Europe/Rome) nei giorni con episodi disponibili in Italia confermati,
+          solo per le serie seguite.
         </p>
-        <label className="flex items-center gap-3">
+        <label className="mt-4 flex items-center gap-3 text-sm">
           <input
             type="checkbox"
             checked={s.notificationsEnabled}
             disabled={pushBlocked || togglePush.isPending}
             onChange={(e) => togglePush.mutate(e.target.checked)}
-            className="h-5 w-5"
+            className="h-5 w-5 accent-primary"
           />
           Abilita notifiche
         </label>
-        {!isSupported ? <p className="mt-2 text-sm text-warn">Questo browser non supporta le notifiche push. Le novità restano visibili nell&apos;app.</p> : null}
-        {isSupported && needsInstall === '1' ? (
-          <p className="mt-2 text-sm text-warn">Su iPhone installa prima Watchly: Safari → Condividi → Aggiungi alla schermata Home.</p>
+        {!isSupported ? (
+          <p className="mt-3 text-sm text-warn">
+            Questo browser non supporta le notifiche push. Le novità restano visibili nell&apos;app.
+          </p>
         ) : null}
-        {permission === 'denied' ? <p className="mt-2 text-sm text-warn">Permesso negato dal browser: riattivalo dalle impostazioni del sito.</p> : null}
-        {pushError ? <p role="alert" className="mt-2 text-sm text-accent">{pushError}</p> : null}
-        {isMockApi ? <p className="mt-2 text-xs text-muted">Modalità demo: nessuna sottoscrizione push reale.</p> : null}
-      </section>
+        {isSupported && needsInstall === '1' ? (
+          <p className="mt-3 text-sm text-warn">
+            Su iPhone installa prima Watchly: Safari → Condividi → Aggiungi alla schermata Home.
+          </p>
+        ) : null}
+        {permission === 'denied' ? (
+          <p className="mt-3 text-sm text-warn">
+            Permesso negato dal browser: riattivalo dalle impostazioni del sito.
+          </p>
+        ) : null}
+        {pushError ? (
+          <p role="alert" className="mt-3 text-sm text-accent">
+            {pushError}
+          </p>
+        ) : null}
+        {isMockApi ? <p className="mt-3 text-xs text-muted">Modalità demo: nessuna sottoscrizione push reale.</p> : null}
+      </Card>
 
-      <section className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-1 font-semibold">Aggiornamento dati</h2>
-        <p className="mb-3 text-sm text-muted">
-          {s.lastSyncAt ? `Ultimo aggiornamento riuscito: ${formatDateTime(s.lastSyncAt)}` : 'Nessun aggiornamento riuscito.'}
-          {s.lastSyncStatus === 'partial' || s.lastSyncStatus === 'failed' ? ' · L’ultimo tentativo non è andato a buon fine.' : ''}
+      <Card>
+        <h2 className="text-[16px] font-bold">Aggiornamento dati</h2>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          {s.lastSyncAt
+            ? `Ultimo aggiornamento riuscito: ${formatDateTime(s.lastSyncAt)}`
+            : 'Nessun aggiornamento riuscito.'}
+          {s.lastSyncStatus === 'partial' || s.lastSyncStatus === 'failed'
+            ? ' · L’ultimo tentativo non è andato a buon fine.'
+            : ''}
         </p>
-        <Button disabled={sync.isPending} onClick={() => sync.mutate()}>
-          {sync.isPending ? 'Aggiornamento…' : 'Aggiorna ora'}
-        </Button>
-        {sync.isError ? <div className="mt-3"><ErrorState error={sync.error} /></div> : null}
-        {sync.data && sync.data.status !== 'ok' ? <p role="status" className="mt-2 text-sm text-warn">Aggiornamento {sync.data.status === 'partial' ? 'parziale' : 'non riuscito'}.</p> : null}
-      </section>
+        <div className="mt-4">
+          <Button disabled={sync.isPending} onClick={() => sync.mutate()}>
+            {sync.isPending ? 'Aggiornamento…' : 'Aggiorna ora'}
+          </Button>
+        </div>
+        {sync.isError ? (
+          <div className="mt-3">
+            <ErrorState error={sync.error} />
+          </div>
+        ) : null}
+        {sync.data && sync.data.status !== 'ok' ? (
+          <p role="status" className="mt-3 text-sm text-warn">
+            Aggiornamento {sync.data.status === 'partial' ? 'parziale' : 'non riuscito'}.
+          </p>
+        ) : null}
+      </Card>
 
-      <section className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-1 font-semibold">Fuso orario e lingua</h2>
-        <p className="text-sm text-muted">Italiano · Europe/Rome (fisso per la programmazione italiana).</p>
-      </section>
+      <Card>
+        <h2 className="text-[16px] font-bold">Fuso orario e lingua</h2>
+        <p className="mt-2 text-sm leading-6 text-muted">Italiano · Europe/Rome (fisso per la programmazione italiana).</p>
+      </Card>
 
-      <section className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-1 font-semibold">Account</h2>
-        <p className="mb-3 text-sm text-muted">Connesso come {me.data?.name ?? '…'}</p>
-        <div className="flex flex-wrap gap-2">
+      <Card>
+        <h2 className="text-[16px] font-bold">Account</h2>
+        <p className="mt-2 text-sm leading-6 text-muted">Connesso come {me.data?.name ?? '…'}</p>
+        <div className="mt-4 flex flex-wrap gap-2">
           <Button variant="ghost" disabled={resetCache.isPending} onClick={() => resetCache.mutate()}>
             Svuota cache locale
           </Button>
@@ -149,8 +205,12 @@ export default function SettingsPage() {
             Esci
           </Button>
         </div>
-        {resetCache.isSuccess ? <p role="status" className="mt-2 text-sm text-muted">Cache locale svuotata.</p> : null}
-      </section>
+        {resetCache.isSuccess ? (
+          <p role="status" className="mt-3 text-sm text-muted">
+            Cache locale svuotata.
+          </p>
+        ) : null}
+      </Card>
     </div>
   );
 }
