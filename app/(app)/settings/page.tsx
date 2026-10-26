@@ -134,8 +134,8 @@ export default function SettingsPage() {
       <Card>
         <h2 className="text-[16px] font-bold">Notifiche</h2>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Una notifica alle 12:00 (Europe/Rome) nei giorni con episodi disponibili in Italia confermati,
-          solo per le serie seguite.
+          Una notifica alle 12:00 (Europe/Rome) nei giorni con episodi in uscita,
+          solo per le serie seguite e in base alle date dei provider.
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-3 text-sm">
@@ -223,7 +223,7 @@ export default function SettingsPage() {
 
       <Card>
         <h2 className="text-[16px] font-bold">Fuso orario e lingua</h2>
-        <p className="mt-2 text-sm leading-6 text-muted">Italiano · Europe/Rome (fisso per la programmazione italiana).</p>
+        <p className="mt-2 text-sm leading-6 text-muted">Italiano · Europe/Rome (fuso del calendario).</p>
       </Card>
 
       <Card>

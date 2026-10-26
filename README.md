@@ -24,7 +24,7 @@ in accordo con il backend. In modalita demo usare un'email valida e una password
 
 ## Note
 
-- Il calendario mostra `availability` con provenienza; le date originali non sono mai presentate come «Disponibile in Italia».
+- Il calendario mostra esclusivamente le date pubblicate dai provider, insieme alla fonte.
 - Nessun segreto nel client: solo variabili `NEXT_PUBLIC_*` non sensibili.
 - Service worker (`public/sw.js`) attivo solo in produzione; non mette in cache le API. Web Push richiede VAPID pubblica e backend.
 - Deploy: Vercel (preset Next.js), variabili separate per Preview/Production.

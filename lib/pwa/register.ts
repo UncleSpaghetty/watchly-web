@@ -61,7 +61,7 @@ export async function showNotificationPreview(): Promise<void> {
   }
 
   const date = getRomeTodayIso();
-  const title = 'Watchly · oggi in Italia';
+  const title = 'Watchly · uscite di oggi';
   const options: NotificationOptions = {
     body: '2 episodi in programma oggi: Solo Leveling, The Last of Us',
     icon: '/icons/icon-192.png',

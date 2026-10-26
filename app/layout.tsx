@@ -6,7 +6,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: { default: 'Watchly', template: '%s · Watchly' },
-  description: 'Segui anime e serie TV, calendario delle uscite in Italia.',
+  description: 'Segui anime e serie TV e consulta il calendario delle uscite.',
   manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, title: 'Watchly', statusBarStyle: 'black-translucent' },
   icons: { icon: '/icons/icon.svg', apple: '/icons/apple-touch-icon.png' },

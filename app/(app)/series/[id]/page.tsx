@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { WatchStatusButton } from '@/components/episodes/watch-status-button';
-import { AvailabilityBadge } from '@/components/series/availability-badge';
 import { Poster } from '@/components/series/poster';
 import { FollowButton } from '@/components/series/series-card';
 import { Button, EmptyState, ErrorState, ListSkeleton } from '@/components/ui/feedback';
@@ -102,7 +101,7 @@ export default function SeriesPage() {
       ) : (
         <ul className="space-y-2.5">
           {episodes.data.map((e, index) => {
-            const episodeDate = e.availability.localDate ?? e.originalAirDate;
+            const episodeDate = e.airDate;
             const isPast = episodeDate ? episodeDate < today : false;
             return (
               <li
@@ -120,24 +119,9 @@ export default function SeriesPage() {
                     {e.title ?? (e.number ? `Episodio ${e.number}` : 'Episodio')}
                   </p>
                   <p className="mt-1 text-xs text-muted">
-                    Prima trasmissione originale: {e.originalAirDate ? formatLongDate(e.originalAirDate) : 'n.d.'}
+                    Data di uscita: {e.airDate ? formatLongDate(e.airDate) : 'non disponibile'}
                   </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <AvailabilityBadge availability={e.availability} />
-                    {e.availability.localDate ? (
-                      <span className="text-xs text-muted">{formatLongDate(e.availability.localDate)}</span>
-                    ) : null}
-                    {e.availability.sourceUrl && /^https:\/\//.test(e.availability.sourceUrl) ? (
-                      <a
-                        href={e.availability.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-semibold text-primary underline"
-                      >
-                        Fonte
-                      </a>
-                    ) : null}
-                  </div>
+                  <p className="mt-2 text-xs font-medium text-muted">Fonte: {sourceLabels[e.source]}</p>
                 </div>
                 <WatchStatusButton
                   watched={!!e.watchedAt}

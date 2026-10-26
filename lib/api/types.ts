@@ -3,32 +3,12 @@
 
 export type SeriesKind = 'anime' | 'tv';
 export type CatalogSource = 'kitsu' | 'anilist' | 'tmdb';
-export type CalendarMode = 'italy' | 'original';
 
 export const sourceLabels: Record<CatalogSource, string> = {
   kitsu: 'Kitsu',
   anilist: 'AniList',
   tmdb: 'TMDB',
 };
-
-export type AvailabilityStatus =
-  | 'confirmed'
-  | 'estimated'
-  | 'original'
-  | 'unknown'
-  | 'disputed'
-  | 'withdrawn';
-
-export interface Availability {
-  country: string;
-  service: string | null;
-  status: AvailabilityStatus;
-  /** Data civile `YYYY-MM-DD`, non un timestamp */
-  localDate: string | null;
-  precision: 'date' | 'datetime' | 'month' | 'unknown';
-  sourceUrl: string | null;
-  lastVerifiedAt: string | null;
-}
 
 export interface SeriesSummary {
   id: string;
@@ -49,7 +29,6 @@ export interface SeriesDetail extends SeriesSummary {
   seasons: number | null;
   lastSyncAt: string | null;
   lastSyncStatus: 'ok' | 'partial' | 'failed' | null;
-  nextItalianAvailability: Availability | null;
 }
 
 export interface EpisodeDto {
@@ -57,8 +36,9 @@ export interface EpisodeDto {
   seasonNumber: number | null;
   number: number | null;
   title: string | null;
-  originalAirDate: string | null;
-  availability: Availability;
+  /** Data civile `YYYY-MM-DD` pubblicata dal provider */
+  airDate: string | null;
+  source: CatalogSource;
   watchedAt: string | null;
 }
 
@@ -70,13 +50,12 @@ export interface CalendarEntry {
   seasonNumber: number | null;
   episodeTitle: string | null;
   watchedAt: string | null;
-  availability: Availability;
+  source: CatalogSource;
 }
 
 export interface CalendarResponse {
   from: string;
   to: string;
-  mode: CalendarMode;
   entries: CalendarEntry[];
   /** true se i dati provengono da un refresh parziale o fallito */
   stale: boolean;
@@ -84,12 +63,11 @@ export interface CalendarResponse {
 }
 
 export interface FollowingItem extends SeriesSummary {
-  nextAvailability: Availability | null;
+  nextAirDate: string | null;
 }
 
 export interface UserSettings {
   notificationsEnabled: boolean;
-  calendarMode: CalendarMode;
   lastSyncAt: string | null;
   lastSyncStatus: 'ok' | 'partial' | 'failed' | null;
 }
@@ -147,11 +125,11 @@ export interface WatchlyApi {
   following(): Promise<FollowingItem[]>;
   follow(seriesId: string): Promise<void>;
   unfollow(seriesId: string): Promise<void>;
-  calendar(from: string, to: string, mode: CalendarMode): Promise<CalendarResponse>;
+  calendar(from: string, to: string): Promise<CalendarResponse>;
   setWatched(episodeId: string, watched: boolean): Promise<void>;
   sync(seriesId?: string): Promise<SyncResult>;
   getSettings(): Promise<UserSettings>;
-  patchSettings(patch: Partial<Pick<UserSettings, 'notificationsEnabled' | 'calendarMode'>>): Promise<UserSettings>;
+  patchSettings(patch: Partial<Pick<UserSettings, 'notificationsEnabled'>>): Promise<UserSettings>;
   news(): Promise<NewsPage>;
   registerPush(sub: PushSubscriptionPayload): Promise<{ id: string }>;
   unregisterPush(id: string): Promise<void>;
