@@ -1,6 +1,5 @@
 import {
   ApiError,
-  type CalendarResponse,
   type CatalogSource,
   type EpisodeDto,
   type NewsPage,
@@ -33,7 +32,7 @@ interface BackendSeries {
 
 interface BackendFollowingRead {
   series: BackendSeries;
-  next_italy_date: string | null;
+  next_air_date: string | null;
 }
 
 interface BackendFollowingList {
@@ -45,22 +44,14 @@ interface BackendSearchResponse {
   provider_errors: Record<string, string>;
 }
 
-interface BackendAvailability {
-  status: string;
-  service_id: string | null;
-  local_date: string | null;
-  source_url: string | null;
-}
-
 interface BackendCalendarItem {
   episode_id: string;
   series: { id: string; title: string; kind: SeriesKind; poster_url: string | null };
   season_number: number | null;
   episode_number: number | null;
   title: string | null;
-  local_date: string;
-  date_kind: 'italy' | 'original';
-  italy: BackendAvailability;
+  air_date: string;
+  source: CatalogSource;
   watched: boolean;
 }
 
@@ -85,9 +76,9 @@ interface BackendEpisodeRead {
   season_number: number | null;
   episode_number: number | null;
   title: string | null;
-  original_air_at: string | null;
-  original_air_date: string | null;
-  italy: BackendAvailability;
+  air_at: string | null;
+  air_date: string | null;
+  source: CatalogSource;
   watched: boolean;
 }
 
@@ -208,28 +199,18 @@ function mapSeriesDetail(item: BackendSeriesRead): SeriesDetail {
     seasons: null,
     lastSyncAt: item.last_synced_at,
     lastSyncStatus: mapSyncStatus(item.last_sync_status),
-    nextItalianAvailability: null,
   };
 }
 
 function mapEpisode(item: BackendEpisodeRead): EpisodeDto {
-  const originalAirDate =
-    item.original_air_date ?? (item.original_air_at ? item.original_air_at.slice(0, 10) : null);
+  const airDate = item.air_date ?? (item.air_at ? item.air_at.slice(0, 10) : null);
   return {
     id: item.id,
     seasonNumber: item.season_number,
     number: item.episode_number,
     title: item.title,
-    originalAirDate,
-    availability: {
-      country: 'IT',
-      service: item.italy.service_id,
-      status: item.italy.status as EpisodeDto['availability']['status'],
-      localDate: item.italy.local_date,
-      precision: item.italy.local_date ? 'date' : 'unknown',
-      sourceUrl: item.italy.source_url,
-      lastVerifiedAt: null,
-    },
+    airDate,
+    source: item.source,
     watchedAt: item.watched ? new Date().toISOString() : null,
   };
 }
@@ -237,7 +218,6 @@ function mapEpisode(item: BackendEpisodeRead): EpisodeDto {
 function mapSettings(item: BackendUserSettings): UserSettings {
   return {
     notificationsEnabled: item.notifications_enabled,
-    calendarMode: 'original',
     lastSyncAt: item.last_successful_sync_at,
     lastSyncStatus: null,
   };
@@ -295,54 +275,22 @@ export const httpApi: WatchlyApi = {
   },
   following: async () => {
     const response = await request<BackendFollowingList>('/me/following');
-    return Promise.all(response.items.map(async (row) => {
-      const base = mapSeries(row.series);
-      const episodes = await httpApi.getEpisodes(base.id).catch(() => []);
-      const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Rome' }).format(new Date());
-      const nextEpisode = episodes
-        .map((episode) => ({ episode, date: episode.originalAirDate ?? episode.availability.localDate }))
-        .filter((candidate): candidate is { episode: EpisodeDto; date: string } =>
-          !!candidate.date && candidate.date >= today,
-        )
-        .sort((a, b) => a.date.localeCompare(b.date))[0];
-      return {
-        ...base,
-        nextAvailability: nextEpisode
-          ? {
-              country: nextEpisode.episode.originalAirDate ? 'ORIGINAL' : 'IT',
-              service: nextEpisode.episode.availability.service,
-              status: nextEpisode.episode.originalAirDate ? 'original' : nextEpisode.episode.availability.status,
-              localDate: nextEpisode.date,
-              precision: 'date',
-              sourceUrl: nextEpisode.episode.availability.sourceUrl,
-              lastVerifiedAt: null,
-            }
-          : row.next_italy_date
-            ? {
-                country: 'IT',
-                service: null,
-                status: 'confirmed',
-                localDate: row.next_italy_date,
-                precision: 'date',
-                sourceUrl: null,
-                lastVerifiedAt: null,
-              }
-          : null,
-      };
+    return response.items.map((row) => ({
+      ...mapSeries(row.series),
+      nextAirDate: row.next_air_date,
     }));
   },
   follow: (id) => request<void>(`/me/following/${encodeURIComponent(id)}`, { method: 'PUT' }),
   unfollow: (id) => request<void>(`/me/following/${encodeURIComponent(id)}`, { method: 'DELETE' }),
-  calendar: async (from, to, mode) => {
+  calendar: async (from, to) => {
     const response = await request<BackendCalendarResponse>(
-      `/me/calendar${qs({ start: from, end: to, mode: mode === 'original' ? 'all' : 'italy' })}`,
+      `/me/calendar${qs({ start: from, end: to })}`,
     );
     return {
       from: response.start,
       to: response.end,
-      mode,
       entries: response.items.map((item) => ({
-        date: item.local_date,
+        date: item.air_date,
         episodeId: item.episode_id,
         series: {
           id: item.series.id,
@@ -353,27 +301,8 @@ export const httpApi: WatchlyApi = {
         episodeNumber: item.episode_number,
         seasonNumber: item.season_number,
         episodeTitle: item.title,
-        watchedAt: item.watched ? `${item.local_date}T00:00:00+02:00` : null,
-        availability:
-          item.date_kind === 'original'
-            ? {
-                country: 'ORIGINAL',
-                service: null,
-                status: 'original' as const,
-                localDate: item.local_date,
-                precision: 'date' as const,
-                sourceUrl: null,
-                lastVerifiedAt: null,
-              }
-            : {
-                country: 'IT',
-                service: item.italy.service_id,
-                status: item.italy.status as CalendarResponse['entries'][number]['availability']['status'],
-                localDate: item.italy.local_date,
-                precision: item.italy.local_date ? ('date' as const) : ('unknown' as const),
-                sourceUrl: item.italy.source_url,
-                lastVerifiedAt: null,
-              },
+        watchedAt: item.watched ? `${item.air_date}T00:00:00+02:00` : null,
+        source: item.source,
       })),
       stale: false,
       lastSuccessfulSyncAt: null,

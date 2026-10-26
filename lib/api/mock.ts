@@ -2,7 +2,6 @@ import { addDays, getRomeTodayIso } from '@/lib/date/italy';
 
 import {
   ApiError,
-  type Availability,
   type CalendarEntry,
   type EpisodeDto,
   type NewsItem,
@@ -18,7 +17,7 @@ interface MockState {
   user: string | null;
   following: string[];
   watched: Record<string, string>;
-  settings: Pick<UserSettings, 'notificationsEnabled' | 'calendarMode' | 'lastSyncAt' | 'lastSyncStatus'>;
+  settings: Pick<UserSettings, 'notificationsEnabled' | 'lastSyncAt' | 'lastSyncStatus'>;
   pushId: string | null;
 }
 
@@ -29,7 +28,7 @@ const defaultState = (): MockState => ({
   user: null,
   following: ['s1'],
   watched: {},
-  settings: { notificationsEnabled: false, calendarMode: 'italy', lastSyncAt: null, lastSyncStatus: null },
+  settings: { notificationsEnabled: false, lastSyncAt: null, lastSyncStatus: null },
   pushId: null,
 });
 
@@ -62,16 +61,16 @@ function requireAuth(): MockState {
 type CatalogEntry = Omit<SeriesSummary, 'following'> & {
   status: string | null;
   seasons: number | null;
-  /** offset in giorni da oggi del primo episodio originale, cadenza settimanale, numero episodi */
-  schedule: { startOffset: number; count: number; italy: 'confirmed' | 'estimated' | 'none'; italyLagDays: number; service: string | null } | null;
+  /** Offset del primo episodio, cadenza settimanale e numero di episodi. */
+  schedule: { startOffset: number; count: number } | null;
 };
 
 const catalog: CatalogEntry[] = [
-  { id: 's1', title: 'Cronache del Faro (demo)', alternativeTitles: ['Lighthouse Chronicles'], kind: 'anime', source: 'kitsu', externalId: 'k-1', format: 'TV', year: 2026, posterUrl: null, synopsis: 'Serie fittizia di dimostrazione con date italiane confermate.', status: 'In corso', seasons: 1, schedule: { startOffset: -14, count: 12, italy: 'confirmed', italyLagDays: 1, service: 'Piattaforma demo' } },
-  { id: 's2', title: 'Orbita Lenta (demo)', alternativeTitles: [], kind: 'anime', source: 'anilist', externalId: 'a-2', format: 'TV', year: 2026, posterUrl: null, synopsis: 'Serie fittizia con sole date di prima trasmissione originale.', status: 'In corso', seasons: 1, schedule: { startOffset: -7, count: 10, italy: 'none', italyLagDays: 0, service: null } },
-  { id: 's3', title: 'Distretto 9 Nord (demo)', alternativeTitles: ['District 9 North'], kind: 'tv', source: 'tmdb', externalId: 't-3', format: 'Serie TV', year: 2025, posterUrl: null, synopsis: 'Serie TV fittizia con date italiane stimate.', status: 'In corso', seasons: 2, schedule: { startOffset: -3, count: 8, italy: 'estimated', italyLagDays: 2, service: 'Piattaforma demo' } },
+  { id: 's1', title: 'Cronache del Faro (demo)', alternativeTitles: ['Lighthouse Chronicles'], kind: 'anime', source: 'kitsu', externalId: 'k-1', format: 'TV', year: 2026, posterUrl: null, synopsis: 'Serie fittizia di dimostrazione con date fornite dal provider.', status: 'In corso', seasons: 1, schedule: { startOffset: -14, count: 12 } },
+  { id: 's2', title: 'Orbita Lenta (demo)', alternativeTitles: [], kind: 'anime', source: 'anilist', externalId: 'a-2', format: 'TV', year: 2026, posterUrl: null, synopsis: 'Serie fittizia con calendario episodi.', status: 'In corso', seasons: 1, schedule: { startOffset: -7, count: 10 } },
+  { id: 's3', title: 'Distretto 9 Nord (demo)', alternativeTitles: ['District 9 North'], kind: 'tv', source: 'tmdb', externalId: 't-3', format: 'Serie TV', year: 2025, posterUrl: null, synopsis: 'Serie TV fittizia con calendario episodi.', status: 'In corso', seasons: 2, schedule: { startOffset: -3, count: 8 } },
   { id: 's4', title: 'Il Cartografo (demo)', alternativeTitles: [], kind: 'tv', source: 'tmdb', externalId: 't-4', format: 'Serie TV', year: 2026, posterUrl: null, synopsis: 'Serie TV senza episodi noti: si può comunque seguire.', status: 'Annunciata', seasons: null, schedule: null },
-  { id: 's5', title: 'Maree d\'Inverno (demo)', alternativeTitles: [], kind: 'anime', source: 'kitsu', externalId: 'k-5', format: 'TV', year: 2027, posterUrl: null, synopsis: 'Serie anime fittizia in arrivo.', status: 'In arrivo', seasons: 1, schedule: { startOffset: 10, count: 12, italy: 'estimated', italyLagDays: 3, service: null } },
+  { id: 's5', title: 'Maree d\'Inverno (demo)', alternativeTitles: [], kind: 'anime', source: 'kitsu', externalId: 'k-5', format: 'TV', year: 2027, posterUrl: null, synopsis: 'Serie anime fittizia in arrivo.', status: 'In arrivo', seasons: 1, schedule: { startOffset: 10, count: 12 } },
 ];
 
 const catalogById = new Map(catalog.map((c) => [c.id, c]));
@@ -80,23 +79,11 @@ function buildEpisodes(entry: CatalogEntry): EpisodeDto[] {
   if (!entry.schedule) return [];
   const today = getRomeTodayIso();
   const state = load();
-  const { startOffset, count, italy, italyLagDays, service } = entry.schedule;
+  const { startOffset, count } = entry.schedule;
   return Array.from({ length: count }, (_, i) => {
-    const original = addDays(today, startOffset + i * 7);
-    const availability: Availability =
-      italy === 'none'
-        ? { country: 'IT', service: null, status: 'unknown', localDate: null, precision: 'unknown', sourceUrl: null, lastVerifiedAt: null }
-        : {
-            country: 'IT',
-            service,
-            status: italy,
-            localDate: addDays(original, italyLagDays),
-            precision: 'date',
-            sourceUrl: italy === 'confirmed' ? 'https://example.org/fonte-demo' : null,
-            lastVerifiedAt: italy === 'confirmed' ? `${today}T09:00:00Z` : null,
-          };
+    const airDate = addDays(today, startOffset + i * 7);
     const id = `${entry.id}-e${i + 1}`;
-    return { id, seasonNumber: 1, number: i + 1, title: `Episodio ${i + 1}`, originalAirDate: original, availability, watchedAt: state.watched[id] ?? null };
+    return { id, seasonNumber: 1, number: i + 1, title: `Episodio ${i + 1}`, airDate, source: entry.source, watchedAt: state.watched[id] ?? null };
   });
 }
 
@@ -106,12 +93,9 @@ function toSummary(entry: CatalogEntry, following: string[]): SeriesSummary {
   return { ...rest, following: following.includes(entry.id) };
 }
 
-function nextItalian(entry: CatalogEntry): Availability | null {
+function nextAirDate(entry: CatalogEntry): string | null {
   const today = getRomeTodayIso();
-  const next = buildEpisodes(entry).find(
-    (e) => e.availability.status === 'confirmed' && e.availability.localDate && e.availability.localDate >= today,
-  );
-  return next?.availability ?? null;
+  return buildEpisodes(entry).find((episode) => episode.airDate && episode.airDate >= today)?.airDate ?? null;
 }
 
 const mockNews = (following: string[]): NewsItem[] => [
@@ -156,7 +140,6 @@ export const mockApi: WatchlyApi = {
       seasons: entry.seasons,
       lastSyncAt: s.settings.lastSyncAt,
       lastSyncStatus: s.settings.lastSyncStatus,
-      nextItalianAvailability: nextItalian(entry),
     };
     return detail;
   },
@@ -172,7 +155,7 @@ export const mockApi: WatchlyApi = {
     const s = requireAuth();
     return s.following.flatMap((id) => {
       const entry = catalogById.get(id);
-      return entry ? [{ ...toSummary(entry, s.following), nextAvailability: nextItalian(entry) }] : [];
+      return entry ? [{ ...toSummary(entry, s.following), nextAirDate: nextAirDate(entry) }] : [];
     });
   },
   async follow(id) {
@@ -186,7 +169,7 @@ export const mockApi: WatchlyApi = {
     const s = requireAuth();
     save({ ...s, following: s.following.filter((f) => f !== id) });
   },
-  async calendar(from, to, mode) {
+  async calendar(from, to) {
     await delay();
     const s = requireAuth();
     const entries: CalendarEntry[] = [];
@@ -194,13 +177,8 @@ export const mockApi: WatchlyApi = {
       const entry = catalogById.get(id);
       if (!entry) continue;
       for (const ep of buildEpisodes(entry)) {
-        const availability: Availability =
-          mode === 'original'
-            ? { country: 'ORIGINAL', service: null, status: 'original', localDate: ep.originalAirDate, precision: 'date', sourceUrl: null, lastVerifiedAt: null }
-            : ep.availability;
-        const date = availability.localDate;
+        const date = ep.airDate;
         if (!date || date < from || date > to) continue;
-        if (availability.status === 'unknown' || availability.status === 'withdrawn') continue;
         entries.push({
           date,
           episodeId: ep.id,
@@ -209,12 +187,12 @@ export const mockApi: WatchlyApi = {
           seasonNumber: ep.seasonNumber,
           episodeTitle: ep.title,
           watchedAt: ep.watchedAt,
-          availability,
+          source: ep.source,
         });
       }
     }
     entries.sort((a, b) => a.date.localeCompare(b.date) || a.series.title.localeCompare(b.series.title));
-    return { from, to, mode, entries, stale: s.settings.lastSyncStatus === 'partial' || s.settings.lastSyncStatus === 'failed', lastSuccessfulSyncAt: s.settings.lastSyncAt };
+    return { from, to, entries, stale: s.settings.lastSyncStatus === 'partial' || s.settings.lastSyncStatus === 'failed', lastSuccessfulSyncAt: s.settings.lastSyncAt };
   },
   async setWatched(episodeId, watched) {
     await delay(100);

@@ -6,10 +6,9 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 import { WatchStatusButton } from '@/components/episodes/watch-status-button';
-import { AvailabilityBadge } from '@/components/series/availability-badge';
 import { SegmentedTabs } from '@/components/ui/controls';
 import { Button, EmptyState, ErrorState, ListSkeleton, PageHeader, StaleBanner } from '@/components/ui/feedback';
-import { api, type CalendarEntry } from '@/lib/api';
+import { api, sourceLabels, type CalendarEntry } from '@/lib/api';
 import {
   formatLongDate,
   getMonthRange,
@@ -38,8 +37,8 @@ export function CalendarView() {
   const label = view === 'week' ? week.label : month.label;
 
   const calendar = useQuery({
-    queryKey: ['calendar', range.from, range.to, 'original'],
-    queryFn: () => api.calendar(range.from, range.to, 'original'),
+    queryKey: ['calendar', range.from, range.to],
+    queryFn: () => api.calendar(range.from, range.to),
   });
   const watched = useWatchedMutation();
 
@@ -200,7 +199,7 @@ export function CalendarView() {
                     {e.episodeTitle ? ` — ${e.episodeTitle}` : ''}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <AvailabilityBadge availability={e.availability} />
+                    <span className="text-[11px] font-medium text-muted">{sourceLabels[e.source]}</span>
                     <span className={`text-[11px] font-bold ${isPast ? 'text-muted' : 'text-primary'}`}>
                       {isPast ? 'Già uscito' : isToday ? 'Esce oggi' : 'In arrivo'}
                     </span>

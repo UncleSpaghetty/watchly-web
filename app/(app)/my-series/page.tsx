@@ -82,8 +82,8 @@ export default function MySeriesPage() {
                 series={s}
                 footer={
                   <p className="mt-1 text-xs text-muted">
-                    {s.nextAvailability?.localDate
-                      ? `Prossimo episodio: ${formatLongDate(s.nextAvailability.localDate)}`
+                    {s.nextAirDate
+                      ? `Prossimo episodio: ${formatLongDate(s.nextAirDate)}`
                       : 'Data del prossimo episodio non ancora disponibile'}
                   </p>
                 }

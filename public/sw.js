@@ -1,4 +1,4 @@
-const VERSION = 'v2';
+const VERSION = 'v3';
 const STATIC_CACHE = `watchly-static-${VERSION}`;
 const PAGES_CACHE = `watchly-pages-${VERSION}`;
 
