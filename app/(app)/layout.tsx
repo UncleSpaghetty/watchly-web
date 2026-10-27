@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { AppNav } from '@/components/layout/app-nav';
 import { OfflineBanner } from '@/components/layout/offline-banner';
@@ -11,6 +11,7 @@ import { api, ApiError } from '@/lib/api';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const [minimumLoadingTimeElapsed, setMinimumLoadingTimeElapsed] = useState(false);
   const me = useQuery({
     queryKey: ['me'],
     queryFn: () => api.me(),
@@ -20,10 +21,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const unauthorized = me.error instanceof ApiError && me.error.status === 401;
 
   useEffect(() => {
-    if (unauthorized) router.replace('/login');
-  }, [unauthorized, router]);
+    const timeout = window.setTimeout(() => setMinimumLoadingTimeElapsed(true), 1_000);
 
-  if (me.isPending || unauthorized) {
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    if (unauthorized && minimumLoadingTimeElapsed) router.replace('/login');
+  }, [minimumLoadingTimeElapsed, unauthorized, router]);
+
+  if (me.isPending || unauthorized || !minimumLoadingTimeElapsed) {
     return <AnimeLoader />;
   }
 
