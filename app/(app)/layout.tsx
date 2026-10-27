@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 
 import { AppNav } from '@/components/layout/app-nav';
 import { OfflineBanner } from '@/components/layout/offline-banner';
-import { ListSkeleton } from '@/components/ui/feedback';
+import { AnimeLoader } from '@/components/ui/anime-loader';
 import { api, ApiError } from '@/lib/api';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -24,11 +24,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [unauthorized, router]);
 
   if (me.isPending || unauthorized) {
-    return (
-      <div className="mx-auto max-w-2xl p-6">
-        <ListSkeleton rows={3} />
-      </div>
-    );
+    return <AnimeLoader />;
   }
 
   return (
