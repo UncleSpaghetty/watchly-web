@@ -332,6 +332,90 @@ body {
   box-shadow: 0 -8px 30px rgb(0 0 0 / 12%);
 }
 
+.app-nav-brand {
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.25rem;
+}
+
+.app-nav-logo {
+  border: 1px solid color-mix(in srgb, var(--color-primary) 34%, transparent);
+  border-radius: 15px;
+  box-shadow:
+    0 10px 26px rgb(0 0 0 / 24%),
+    0 0 24px rgb(111 191 146 / 8%);
+  display: grid;
+  flex: 0 0 auto;
+  height: 46px;
+  overflow: hidden;
+  place-items: center;
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease;
+  width: 46px;
+}
+
+.app-nav-brand:hover .app-nav-logo {
+  border-color: color-mix(in srgb, var(--color-primary) 70%, transparent);
+  transform: translateY(-1px);
+}
+
+.app-nav-section-label {
+  color: color-mix(in srgb, var(--color-muted) 76%, transparent);
+  font-size: 0.67rem;
+  font-weight: 750;
+  letter-spacing: 0.16em;
+  margin-bottom: 0.45rem;
+  padding-inline: 0.75rem;
+  text-transform: uppercase;
+}
+
+.app-nav-footer {
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
+  padding-top: 1rem;
+}
+
+.app-nav-account {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-soft) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 86%, transparent);
+  border-radius: 16px;
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.app-nav-avatar {
+  align-items: center;
+  background: linear-gradient(145deg, var(--color-primary), #477c5e);
+  border-radius: 12px;
+  color: var(--color-background);
+  display: flex;
+  flex: 0 0 auto;
+  font-size: 0.9rem;
+  font-weight: 800;
+  height: 2.25rem;
+  justify-content: center;
+  width: 2.25rem;
+}
+
+.app-nav-legal {
+  color: var(--color-muted);
+  display: flex;
+  font-size: 0.7rem;
+  gap: 0.8rem;
+  justify-content: center;
+  padding-top: 0.8rem;
+}
+
+.app-nav-legal a {
+  transition: color 180ms ease;
+}
+
+.app-nav-legal a:hover {
+  color: var(--color-primary);
+}
+
 .app-main {
   padding-top: calc(env(safe-area-inset-top, 0px) + 1.25rem);
 }
