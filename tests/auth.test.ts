@@ -76,3 +76,46 @@ describe('login HTTP contract', () => {
     expect(init?.credentials).toBe('include');
   });
 });
+
+describe('news HTTP contract', () => {
+  it('maps the backend RSS response to the web model', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          configured: true,
+          next_cursor: null,
+          items: [
+            {
+              id: 'news-1',
+              source: 'example.org',
+              title: 'Nuova stagione annunciata',
+              excerpt: 'Un breve estratto.',
+              published_at: '2026-10-27T10:00:00Z',
+              image_url: 'https://example.org/image.jpg',
+              url: 'https://example.org/article',
+              series: [{ id: 'series-1', title: 'Example Anime', followed: true }],
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(httpApi.news()).resolves.toEqual({
+      configured: true,
+      items: [
+        {
+          id: 'news-1',
+          source: 'example.org',
+          title: 'Nuova stagione annunciata',
+          excerpt: 'Un breve estratto.',
+          publishedAt: '2026-10-27T10:00:00Z',
+          imageUrl: 'https://example.org/image.jpg',
+          url: 'https://example.org/article',
+          relatedSeries: [{ id: 'series-1', title: 'Example Anime', following: true }],
+        },
+      ],
+    });
+  });
+});

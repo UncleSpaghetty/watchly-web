@@ -1,6 +1,8 @@
 import {
   ApiError,
   type CatalogSource,
+  type DashboardData,
+  type DashboardPeriodWeeks,
   type EpisodeDto,
   type NewsPage,
   type SeriesDetail,
@@ -24,6 +26,9 @@ interface BackendSeries {
   alternative_titles: unknown;
   poster_url: string | null;
   synopsis: string | null;
+  genres: string[];
+  average_rating: number | null;
+  episode_runtime_minutes: number | null;
   format: string | null;
   year: number | null;
   external_ids: BackendExternalId[];
@@ -46,7 +51,12 @@ interface BackendSearchResponse {
 
 interface BackendCalendarItem {
   episode_id: string;
-  series: { id: string; title: string; kind: SeriesKind; poster_url: string | null };
+  series: {
+    id: string;
+    title: string;
+    kind: SeriesKind;
+    poster_url: string | null;
+  };
   season_number: number | null;
   episode_number: number | null;
   title: string | null;
@@ -76,6 +86,7 @@ interface BackendEpisodeRead {
   season_number: number | null;
   episode_number: number | null;
   title: string | null;
+  duration_minutes: number | null;
   air_at: string | null;
   air_date: string | null;
   source: CatalogSource;
@@ -106,7 +117,72 @@ interface BackendSessionUser {
   display_name: string | null;
 }
 
-export function resolveApiBaseUrl(configured: string | undefined, environment: string): string {
+interface BackendNewsItem {
+  id: string;
+  source: string;
+  title: string;
+  excerpt: string | null;
+  published_at: string | null;
+  image_url: string | null;
+  url: string;
+  series: Array<{ id: string; title: string; followed: boolean }>;
+}
+
+interface BackendNewsPage {
+  items: BackendNewsItem[];
+  next_cursor: string | null;
+  configured: boolean;
+}
+
+interface BackendDashboard {
+  generated_at: string;
+  timezone: string;
+  period_weeks: DashboardPeriodWeeks;
+  kpis: {
+    followed_series: number;
+    watched_episodes: number;
+    aired_episodes: number;
+    completion_percentage: number;
+    backlog_episodes: number;
+    upcoming_7_days: number;
+    upcoming_30_days: number;
+    estimated_watch_minutes: number;
+    duration_coverage_percentage: number;
+    average_provider_rating: number | null;
+    rated_series: number;
+    current_activity_streak: number;
+    longest_activity_streak: number;
+  };
+  activity: Array<{ period_start: string; watched_count: number }>;
+  watchlist_breakdown: { anime: number; tv: number };
+  genres: {
+    basis: 'watched_episodes' | 'followed_series';
+    items: Array<{ name: string; count: number }>;
+  };
+  series_progress: Array<{
+    series_id: string;
+    title: string;
+    poster_url: string | null;
+    kind: SeriesKind;
+    watched: number;
+    aired: number;
+    percentage: number;
+    backlog: number;
+    average_rating: number | null;
+  }>;
+  top_series: Array<{
+    series_id: string;
+    title: string;
+    poster_url: string | null;
+    watched: number;
+    estimated_minutes: number;
+  }>;
+}
+
+export function resolveApiBaseUrl(
+  configured: string | undefined,
+  environment: string,
+): string {
   const value = configured?.trim();
   if (value) return value.replace(/\/$/, '');
   return environment === 'development' ? 'http://localhost:8000/api/v1' : '';
@@ -139,7 +215,10 @@ async function request<T>(
     });
   } catch (error) {
     if (rest.signal?.aborted) throw error;
-    throw new ApiError(0, 'Impossibile contattare il server. Controlla la connessione.');
+    throw new ApiError(
+      0,
+      'Impossibile contattare il server. Controlla la connessione.',
+    );
   }
 
   if (!response.ok) {
@@ -166,7 +245,9 @@ const qs = (params: Record<string, string | undefined>) => {
 function mapSeries(item: BackendSeries): SeriesSummary {
   const external = item.external_ids[0];
   const alternativeTitles = Array.isArray(item.alternative_titles)
-    ? item.alternative_titles.filter((t): t is string => typeof t === 'string' && t.length > 0)
+    ? item.alternative_titles.filter(
+        (t): t is string => typeof t === 'string' && t.length > 0,
+      )
     : [];
   return {
     id: item.id,
@@ -179,6 +260,9 @@ function mapSeries(item: BackendSeries): SeriesSummary {
     year: item.year,
     posterUrl: item.poster_url,
     synopsis: item.synopsis,
+    genres: item.genres ?? [],
+    averageRating: item.average_rating,
+    episodeRuntimeMinutes: item.episode_runtime_minutes,
     following: item.followed,
   };
 }
@@ -203,12 +287,14 @@ function mapSeriesDetail(item: BackendSeriesRead): SeriesDetail {
 }
 
 function mapEpisode(item: BackendEpisodeRead): EpisodeDto {
-  const airDate = item.air_date ?? (item.air_at ? item.air_at.slice(0, 10) : null);
+  const airDate =
+    item.air_date ?? (item.air_at ? item.air_at.slice(0, 10) : null);
   return {
     id: item.id,
     seasonNumber: item.season_number,
     number: item.episode_number,
     title: item.title,
+    durationMinutes: item.duration_minutes,
     airDate,
     source: item.source,
     watchedAt: item.watched ? new Date().toISOString() : null,
@@ -245,6 +331,53 @@ function mapSync(item: BackendSyncRun): SyncResult {
   };
 }
 
+function mapDashboard(item: BackendDashboard): DashboardData {
+  return {
+    generatedAt: item.generated_at,
+    timezone: item.timezone,
+    periodWeeks: item.period_weeks,
+    kpis: {
+      followedSeries: item.kpis.followed_series,
+      watchedEpisodes: item.kpis.watched_episodes,
+      airedEpisodes: item.kpis.aired_episodes,
+      completionPercentage: item.kpis.completion_percentage,
+      backlogEpisodes: item.kpis.backlog_episodes,
+      upcoming7Days: item.kpis.upcoming_7_days,
+      upcoming30Days: item.kpis.upcoming_30_days,
+      estimatedWatchMinutes: item.kpis.estimated_watch_minutes,
+      durationCoveragePercentage: item.kpis.duration_coverage_percentage,
+      averageProviderRating: item.kpis.average_provider_rating,
+      ratedSeries: item.kpis.rated_series,
+      currentActivityStreak: item.kpis.current_activity_streak,
+      longestActivityStreak: item.kpis.longest_activity_streak,
+    },
+    activity: item.activity.map((point) => ({
+      periodStart: point.period_start,
+      watchedCount: point.watched_count,
+    })),
+    watchlistBreakdown: item.watchlist_breakdown,
+    genres: item.genres,
+    seriesProgress: item.series_progress.map((series) => ({
+      seriesId: series.series_id,
+      title: series.title,
+      posterUrl: series.poster_url,
+      kind: series.kind,
+      watched: series.watched,
+      aired: series.aired,
+      percentage: series.percentage,
+      backlog: series.backlog,
+      averageRating: series.average_rating,
+    })),
+    topSeries: item.top_series.map((series) => ({
+      seriesId: series.series_id,
+      title: series.title,
+      posterUrl: series.poster_url,
+      watched: series.watched,
+      estimatedMinutes: series.estimated_minutes,
+    })),
+  };
+}
+
 export const httpApi: WatchlyApi = {
   login: async (email, password) =>
     mapSessionUser(
@@ -262,18 +395,35 @@ export const httpApi: WatchlyApi = {
     ),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
   me: async () => mapSessionUser(await request<BackendSessionUser>('/me')),
-  search: async (q, kind: SeriesKind | 'all', source: CatalogSource | 'all', signal) => {
+  dashboard: async (weeks) =>
+    mapDashboard(
+      await request<BackendDashboard>(`/me/dashboard?weeks=${weeks}`),
+    ),
+  search: async (
+    q,
+    kind: SeriesKind | 'all',
+    source: CatalogSource | 'all',
+    signal,
+  ) => {
     const response = await request<BackendSearchResponse>(
       `/catalog/search${qs({ q, kind: kind === 'all' ? undefined : kind, source: source === 'all' ? undefined : source })}`,
       { signal },
     );
-    if (response.results.length === 0 && Object.keys(response.provider_errors).length > 0) {
-      throw new ApiError(503, Object.values(response.provider_errors).join(' '));
+    if (
+      response.results.length === 0 &&
+      Object.keys(response.provider_errors).length > 0
+    ) {
+      throw new ApiError(
+        503,
+        Object.values(response.provider_errors).join(' '),
+      );
     }
     return response.results.map(mapSeries);
   },
   getSeries: async (id) =>
-    mapSeriesDetail(await request<BackendSeriesRead>(`/series/${encodeURIComponent(id)}`)),
+    mapSeriesDetail(
+      await request<BackendSeriesRead>(`/series/${encodeURIComponent(id)}`),
+    ),
   getEpisodes: async (id) => {
     const response = await request<BackendEpisodeListResponse>(
       `/series/${encodeURIComponent(id)}/episodes`,
@@ -287,8 +437,12 @@ export const httpApi: WatchlyApi = {
       nextAirDate: row.next_air_date,
     }));
   },
-  follow: (id) => request<void>(`/me/following/${encodeURIComponent(id)}`, { method: 'PUT' }),
-  unfollow: (id) => request<void>(`/me/following/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  follow: (id) =>
+    request<void>(`/me/following/${encodeURIComponent(id)}`, { method: 'PUT' }),
+  unfollow: (id) =>
+    request<void>(`/me/following/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }),
   calendar: async (from, to) => {
     const response = await request<BackendCalendarResponse>(
       `/me/calendar${qs({ start: from, end: to })}`,
@@ -322,10 +476,14 @@ export const httpApi: WatchlyApi = {
   sync: async (seriesId) =>
     mapSync(
       seriesId
-        ? await request<BackendSyncRun>(`/series/${encodeURIComponent(seriesId)}/refresh`, { method: 'POST' })
+        ? await request<BackendSyncRun>(
+            `/series/${encodeURIComponent(seriesId)}/refresh`,
+            { method: 'POST' },
+          )
         : await request<BackendSyncRun>('/me/sync', { method: 'POST' }),
     ),
-  getSettings: async () => mapSettings(await request<BackendUserSettings>('/me/settings')),
+  getSettings: async () =>
+    mapSettings(await request<BackendUserSettings>('/me/settings')),
   patchSettings: async (patch) => {
     const json = {
       ...(patch.notificationsEnabled === undefined
@@ -333,11 +491,39 @@ export const httpApi: WatchlyApi = {
         : { notifications_enabled: patch.notificationsEnabled }),
     };
     return mapSettings(
-      await request<BackendUserSettings>('/me/settings', { method: 'PATCH', json }),
+      await request<BackendUserSettings>('/me/settings', {
+        method: 'PATCH',
+        json,
+      }),
     );
   },
-  news: () => request<NewsPage>('/news'),
-  registerPush: (sub) => request<{ id: string }>('/me/push-subscriptions', { method: 'POST', json: sub }),
+  news: async () => {
+    const response = await request<BackendNewsPage>('/news');
+    return {
+      configured: response.configured,
+      items: response.items.map((item) => ({
+        id: item.id,
+        source: item.source,
+        title: item.title,
+        excerpt: item.excerpt,
+        publishedAt: item.published_at,
+        imageUrl: item.image_url,
+        url: item.url,
+        relatedSeries: item.series.map((series) => ({
+          id: series.id,
+          title: series.title,
+          following: series.followed,
+        })),
+      })),
+    } satisfies NewsPage;
+  },
+  registerPush: (sub) =>
+    request<{ id: string }>('/me/push-subscriptions', {
+      method: 'POST',
+      json: sub,
+    }),
   unregisterPush: (id) =>
-    request<void>(`/me/push-subscriptions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    request<void>(`/me/push-subscriptions/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }),
 };

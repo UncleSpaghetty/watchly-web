@@ -29,7 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-shell min-h-dvh md:flex">
-      <AppNav />
+      <AppNav userName={me.data?.name} />
       <main className="app-main relative z-10 mx-auto w-full max-w-3xl flex-1 px-[22px] pb-28 md:pb-10">
         <OfflineBanner />
         <div className="page-enter">{children}</div>
