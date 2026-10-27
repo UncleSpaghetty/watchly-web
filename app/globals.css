@@ -480,6 +480,15 @@ body {
   display: flex;
   gap: 0.75rem;
   padding: 0.75rem;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.app-nav-account:hover,
+.app-nav-account[aria-current='page'] {
+  background: var(--color-soft);
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
 }
 
 .app-nav-avatar {

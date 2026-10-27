@@ -9,6 +9,7 @@ import {
   Settings,
   Sparkles,
   Newspaper,
+  UserRound,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,6 +17,14 @@ import { usePathname } from 'next/navigation';
 
 import { api } from '@/lib/api';
 import { formatLongDate, getRomeTodayIso } from '@/lib/date/italy';
+
+const mobileItems = [
+  { href: '/', label: 'Calendario', Icon: CalendarDays },
+  { href: '/my-series', label: 'Seguiti', Icon: Heart },
+  { href: '/search', label: 'Cerca', Icon: Search },
+  { href: '/news', label: 'News', Icon: Newspaper },
+  { href: '/profile', label: 'Profilo', Icon: UserRound },
+] as const;
 
 const sections = [
   {
@@ -120,9 +129,30 @@ export function AppNav({ userName }: { userName?: string }) {
         </span>
       </Link>
 
+      <nav aria-label="Navigazione principale" className="flex w-full md:hidden">
+        {mobileItems.map(({ href, label, Icon }) => {
+          const active = isActive(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              aria-current={active ? 'page' : undefined}
+              className={`app-nav-link flex flex-1 flex-col items-center gap-1 px-1 py-2 text-[10px] ${
+                active
+                  ? 'app-nav-link-active text-primary'
+                  : 'text-muted hover:text-foreground'
+              }`}
+            >
+              <Icon size={22} aria-hidden />
+              <span>{label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
       <nav
         aria-label="Navigazione principale"
-        className="flex w-full md:mt-8 md:flex-col"
+        className="hidden w-full md:mt-8 md:flex md:flex-col"
       >
         {sections.map((section) => (
           <div className="contents md:mb-6 md:block" key={section.label}>
@@ -137,9 +167,9 @@ export function AppNav({ userName }: { userName?: string }) {
                     key={href}
                     href={href}
                     aria-current={active ? 'page' : undefined}
-                    className={`app-nav-link flex flex-1 flex-col items-center gap-1 px-1 py-2 text-[10px] md:flex-none md:flex-row md:gap-3 md:rounded-[14px] md:px-3 md:py-2.5 md:text-sm ${
+                    className={`app-nav-link flex flex-none flex-row items-center gap-3 rounded-[14px] px-3 py-2.5 text-sm ${
                       active
-                        ? 'app-nav-link-active text-primary md:bg-soft'
+                        ? 'app-nav-link-active bg-soft text-primary'
                         : 'text-muted hover:text-foreground'
                     }`}
                   >
@@ -156,7 +186,11 @@ export function AppNav({ userName }: { userName?: string }) {
       <div className="app-nav-footer mt-auto hidden md:block">
         <NextEpisodeCard />
 
-        <div className="app-nav-account">
+        <Link
+          className="app-nav-account"
+          href="/profile"
+          aria-current={isActive('/profile') ? 'page' : undefined}
+        >
           <span className="app-nav-avatar" aria-hidden="true">
             {initial}
           </span>
@@ -171,7 +205,7 @@ export function AppNav({ userName }: { userName?: string }) {
               {displayName}
             </span>
           </span>
-        </div>
+        </Link>
 
         <nav className="app-nav-legal" aria-label="Link informativi">
           <Link href="/about">Info</Link>

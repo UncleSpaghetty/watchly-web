@@ -16,14 +16,33 @@ describe('login HTTP contract', () => {
 
   it('sends email and password with session credentials, not username', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(JSON.stringify({ id: 'owner', email: 'owner@example.com', display_name: 'Owner' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
+      new Response(
+        JSON.stringify({
+          id: 'owner',
+          email: 'owner@example.com',
+          display_name: 'Owner',
+          created_at: '2026-10-27T10:00:00Z',
+          timezone: 'Europe/Rome',
+          locale: 'it-IT',
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    await httpApi.login('owner+admin@example.com', 'test-password');
+    const user = await httpApi.login('owner+admin@example.com', 'test-password');
+
+    expect(user).toEqual({
+      id: 'owner',
+      name: 'Owner',
+      email: 'owner@example.com',
+      createdAt: '2026-10-27T10:00:00Z',
+      timezone: 'Europe/Rome',
+      locale: 'it-IT',
+    });
 
     expect(fetchMock).toHaveBeenCalledOnce();
     const call = fetchMock.mock.calls[0];

@@ -27,7 +27,14 @@ interface MockState {
 }
 
 const STORAGE_KEY = 'watchly-mock-state-v1';
-const DEMO_USER = { id: 'demo', name: 'Demo' };
+const DEMO_USER = {
+  id: 'demo',
+  name: 'Demo',
+  email: 'utente.demo@watchly.local',
+  createdAt: '2026-01-01T12:00:00Z',
+  timezone: 'Europe/Rome',
+  locale: 'it-IT',
+};
 
 const defaultState = (): MockState => ({
   user: null,

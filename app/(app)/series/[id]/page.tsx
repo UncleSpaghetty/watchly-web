@@ -1,8 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import { WatchStatusButton } from '@/components/episodes/watch-status-button';
 import { Poster } from '@/components/series/poster';
@@ -23,6 +22,7 @@ import { useSyncMutation, useWatchedMutation } from '@/lib/hooks';
 
 export default function SeriesPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const series = useQuery({
     queryKey: ['series', id],
     queryFn: () => api.getSeries(id),
@@ -52,12 +52,13 @@ export default function SeriesPage() {
   const today = getRomeTodayIso();
   return (
     <div>
-      <Link
-        href="/search"
-        className="mb-4 inline-block text-sm font-semibold text-primary hover:underline"
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="mb-4 inline-block cursor-pointer text-sm font-semibold text-primary hover:underline"
       >
         ← Indietro
-      </Link>
+      </button>
 
       <div className="detail-hero group mb-5 flex gap-4 overflow-hidden rounded-[20px] border border-border bg-surface/90 p-4 sm:p-5">
         <Poster
