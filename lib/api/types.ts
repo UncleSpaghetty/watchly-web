@@ -117,6 +117,7 @@ export class ApiError extends Error {
 
 export interface WatchlyApi {
   login(email: string, password: string): Promise<SessionUser>;
+  loginWithGoogle(credential: string): Promise<SessionUser>;
   logout(): Promise<void>;
   me(): Promise<SessionUser>;
   search(q: string, kind: SeriesKind | 'all', source: CatalogSource | 'all', signal?: AbortSignal): Promise<SeriesSummary[]>;

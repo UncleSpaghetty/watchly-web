@@ -110,6 +110,12 @@ export const mockApi: WatchlyApi = {
     save({ ...load(), user: email });
     return { ...DEMO_USER, name: email };
   },
+  async loginWithGoogle(credential) {
+    await delay();
+    if (!credential) throw new ApiError(401, 'Credenziale Google non valida.');
+    save({ ...load(), user: 'utente.demo@gmail.com' });
+    return { ...DEMO_USER, name: 'Utente demo' };
+  },
   async logout() {
     await delay(50);
     save({ ...load(), user: null });

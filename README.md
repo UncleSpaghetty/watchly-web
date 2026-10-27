@@ -13,10 +13,13 @@ npm run dev        # http://localhost:3000
 Il default di `.env.example` usa `watchly-be` locale su `http://localhost:8000/api/v1`.
 In sviluppo, lo stesso URL viene usato come fallback quando `NEXT_PUBLIC_API_BASE_URL` non è definita.
 Per lavorare senza backend imposta `NEXT_PUBLIC_API_MOCK=true`: l'app userà dati **fittizi** in
-`localStorage` e accetterà qualsiasi credenziale. Il contratto è in `lib/api/types.ts` e
+`localStorage` e mostrerà un accesso Google simulato. Il contratto è in `lib/api/types.ts` e
 `lib/api/http.ts` (sessione via cookie `HttpOnly`, `credentials: 'include'`).
-Il login richiede email e password: `POST /auth/login` invia il JSON `{ email, password }`,
-in accordo con il backend. In modalita demo usare un'email valida e una password non vuota.
+La UI usa Google Identity Services e invia l'ID token a `POST /auth/google`; il backend lo scambia
+con la normale sessione Watchly. Il client ID pubblico va configurato come
+`NEXT_PUBLIC_GOOGLE_CLIENT_ID` in fase di build e deve coincidere con `GOOGLE_CLIENT_ID` del backend.
+Il login classico `POST /auth/login` resta disponibile nel client API per compatibilità, ma non viene
+più mostrato nella pagina di accesso.
 
 ## Script
 
@@ -26,5 +29,6 @@ in accordo con il backend. In modalita demo usare un'email valida e una password
 
 - Il calendario mostra esclusivamente le date pubblicate dai provider, insieme alla fonte.
 - Nessun segreto nel client: solo variabili `NEXT_PUBLIC_*` non sensibili.
+- Il logout revoca la sessione Watchly lato server, pulisce cache/query locali e disabilita la selezione automatica Google; non revoca il consenso dell'account Google.
 - Service worker (`public/sw.js`) attivo solo in produzione; non mette in cache le API. Web Push richiede VAPID pubblica e backend.
 - Deploy: Vercel (preset Next.js), variabili separate per Preview/Production.

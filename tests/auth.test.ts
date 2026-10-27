@@ -40,4 +40,39 @@ describe('login HTTP contract', () => {
       password: 'test-password',
     });
   });
+
+  it('exchanges the Google ID token for the existing Watchly session cookie', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ id: 'google-user', email: 'user@gmail.com', display_name: 'User' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await httpApi.loginWithGoogle('signed-google-id-token');
+
+    const call = fetchMock.mock.calls[0];
+    if (!call) throw new Error('Expected a Google login request');
+    const [url, init] = call;
+    if (!init || typeof init.body !== 'string') throw new Error('Expected a JSON request body');
+    expect(url).toMatch(/\/auth\/google$/);
+    expect(init.method).toBe('POST');
+    expect(init.credentials).toBe('include');
+    expect(JSON.parse(init.body)).toEqual({ credential: 'signed-google-id-token' });
+  });
+
+  it('logs out through the server so the opaque session is revoked', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await httpApi.logout();
+
+    const call = fetchMock.mock.calls[0];
+    if (!call) throw new Error('Expected a logout request');
+    const [url, init] = call;
+    expect(url).toMatch(/\/auth\/logout$/);
+    expect(init?.method).toBe('POST');
+    expect(init?.credentials).toBe('include');
+  });
 });

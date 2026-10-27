@@ -7,6 +7,7 @@ import { useState, useSyncExternalStore } from 'react';
 import { Card } from '@/components/ui/controls';
 import { Button, ErrorState, ListSkeleton, PageHeader } from '@/components/ui/feedback';
 import { api, isMockApi } from '@/lib/api';
+import { disableGoogleAutoSelect } from '@/lib/auth/google';
 import { formatDateTime } from '@/lib/date/italy';
 import { useSyncMutation } from '@/lib/hooks';
 import {
@@ -100,6 +101,7 @@ export default function SettingsPage() {
   const logout = useMutation({
     mutationFn: async () => {
       await api.logout();
+      disableGoogleAutoSelect();
       await clearBrowserCaches();
       localStorage.removeItem(PUSH_ID_KEY);
     },
@@ -233,10 +235,15 @@ export default function SettingsPage() {
           <Button variant="ghost" disabled={resetCache.isPending} onClick={() => resetCache.mutate()}>
             Svuota cache locale
           </Button>
-          <Button variant="danger" disabled={logout.isPending} onClick={() => logout.mutate()}>
+          <Button className="g_id_signout" variant="danger" disabled={logout.isPending} onClick={() => logout.mutate()}>
             Esci
           </Button>
         </div>
+        {logout.isError ? (
+          <p role="alert" className="mt-3 text-sm text-accent">
+            {logout.error instanceof Error ? logout.error.message : 'Disconnessione non riuscita.'}
+          </p>
+        ) : null}
         {resetCache.isSuccess ? (
           <p role="status" className="mt-3 text-sm text-muted">
             Cache locale svuotata.
