@@ -1,9 +1,20 @@
 'use client';
 
-import { CalendarDays, Heart, Newspaper, Search, Settings } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import {
+  CalendarDays,
+  Heart,
+  Newspaper,
+  Search,
+  Settings,
+  Sparkles,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+
+import { api } from '@/lib/api';
+import { formatLongDate, getRomeTodayIso } from '@/lib/date/italy';
 
 const sections = [
   {
@@ -23,6 +34,62 @@ const sections = [
     items: [{ href: '/settings', label: 'Impostazioni', Icon: Settings }],
   },
 ] as const;
+
+function NextEpisodeCard() {
+  const today = getRomeTodayIso();
+  const following = useQuery({
+    queryKey: ['following'],
+    queryFn: () => api.following(),
+  });
+  const nextSeries = following.data
+    ?.filter((series) => series.nextAirDate && series.nextAirDate >= today)
+    .sort((a, b) => a.nextAirDate!.localeCompare(b.nextAirDate!))[0];
+
+  if (following.isPending) {
+    return (
+      <div
+        className="app-nav-next app-nav-next-loading"
+        aria-label="Caricamento prossimo episodio"
+      >
+        <span />
+        <span />
+        <span />
+      </div>
+    );
+  }
+
+  if (!nextSeries?.nextAirDate) {
+    return (
+      <Link className="app-nav-next" href="/my-series">
+        <span className="app-nav-next-kicker">
+          <Sparkles size={14} aria-hidden />
+          Prossimo episodio
+        </span>
+        <strong className="app-nav-next-title">Nessuna data in arrivo</strong>
+        <span className="app-nav-next-date">
+          {following.isError
+            ? 'Calendario non disponibile'
+            : 'Controlla le serie che segui'}
+        </span>
+      </Link>
+    );
+  }
+
+  return (
+    <Link className="app-nav-next" href={`/series/${nextSeries.id}`}>
+      <span className="app-nav-next-kicker">
+        <Sparkles size={14} aria-hidden />
+        Prossimo episodio
+      </span>
+      <strong className="app-nav-next-title">{nextSeries.title}</strong>
+      <span className="app-nav-next-date">
+        {nextSeries.nextAirDate === today
+          ? 'Oggi'
+          : formatLongDate(nextSeries.nextAirDate)}
+      </span>
+    </Link>
+  );
+}
 
 export function AppNav({ userName }: { userName?: string }) {
   const pathname = usePathname();
@@ -85,6 +152,8 @@ export function AppNav({ userName }: { userName?: string }) {
       </nav>
 
       <div className="app-nav-footer mt-auto hidden md:block">
+        <NextEpisodeCard />
+
         <div className="app-nav-account">
           <span className="app-nav-avatar" aria-hidden="true">
             {initial}

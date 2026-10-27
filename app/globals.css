@@ -375,6 +375,98 @@ body {
   padding-top: 1rem;
 }
 
+.app-nav-next {
+  background:
+    linear-gradient(145deg, rgb(111 191 146 / 12%), transparent 72%),
+    color-mix(in srgb, var(--color-soft) 76%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, var(--color-border));
+  border-radius: 17px;
+  display: block;
+  margin-bottom: 0.75rem;
+  min-height: 7.25rem;
+  overflow: hidden;
+  padding: 0.85rem;
+  position: relative;
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.app-nav-next::after {
+  background: var(--color-primary);
+  border-radius: 999px;
+  content: "";
+  filter: blur(20px);
+  height: 2.5rem;
+  opacity: 0.09;
+  position: absolute;
+  right: -0.5rem;
+  top: -0.5rem;
+  width: 2.5rem;
+}
+
+.app-nav-next:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
+  transform: translateY(-1px);
+}
+
+.app-nav-next-kicker {
+  align-items: center;
+  color: var(--color-primary);
+  display: flex;
+  font-size: 0.67rem;
+  font-weight: 800;
+  gap: 0.4rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.app-nav-next-title {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--color-foreground);
+  display: -webkit-box;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  margin-top: 0.65rem;
+  overflow: hidden;
+}
+
+.app-nav-next-date {
+  color: var(--color-muted);
+  display: block;
+  font-size: 0.73rem;
+  line-height: 1.35;
+  margin-top: 0.45rem;
+}
+
+.app-nav-next-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  justify-content: center;
+}
+
+.app-nav-next-loading span {
+  animation: skeleton-pulse 1.35s ease-in-out infinite;
+  background: color-mix(in srgb, var(--color-muted) 17%, transparent);
+  border-radius: 999px;
+  display: block;
+  height: 0.55rem;
+}
+
+.app-nav-next-loading span:nth-child(1) {
+  width: 52%;
+}
+
+.app-nav-next-loading span:nth-child(2) {
+  width: 88%;
+}
+
+.app-nav-next-loading span:nth-child(3) {
+  width: 64%;
+}
+
 .app-nav-account {
   align-items: center;
   background: color-mix(in srgb, var(--color-soft) 72%, transparent);
@@ -789,6 +881,16 @@ body {
   }
 }
 
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 @keyframes anime-loader-shimmer {
   0%,
   24% {
@@ -921,6 +1023,7 @@ body {
   .anime-loader-stars circle,
   .anime-loader-track-glow,
   .anime-loader-train,
+  .app-nav-next-loading span,
   .app-shell::before,
   .follow-button[aria-pressed="true"] svg,
   .list-reveal,
