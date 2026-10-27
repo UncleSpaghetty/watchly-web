@@ -18,8 +18,13 @@ Per lavorare senza backend imposta `NEXT_PUBLIC_API_MOCK=true`: l'app userà dat
 La UI usa Google Identity Services e invia l'ID token a `POST /auth/google`; il backend lo scambia
 con la normale sessione Watchly. Il client ID pubblico va configurato come
 `NEXT_PUBLIC_GOOGLE_CLIENT_ID` in fase di build e deve coincidere con `GOOGLE_CLIENT_ID` del backend.
-Il login classico `POST /auth/login` resta disponibile nel client API per compatibilità, ma non viene
-più mostrato nella pagina di accesso.
+Il login classico `POST /auth/login` resta disponibile accanto all'accesso Google per gli account
+già abilitati.
+
+Le pagine pubbliche `/about`, `/privacy` e `/terms` leggono i dati del titolare da
+`LEGAL_CONTROLLER_NAME`, `LEGAL_CONTACT_EMAIL` e, facoltativamente, `LEGAL_CONTROLLER_ADDRESS`.
+Questi valori devono essere presenti durante la build di produzione. La pagina `/about` può essere
+usata come homepage pubblica nella configurazione della schermata consenso Google.
 
 ## Script
 
