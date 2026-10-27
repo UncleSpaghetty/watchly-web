@@ -31,30 +31,32 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6">
-      <h1 className="mb-1 text-3xl font-bold text-primary">Watchly</h1>
-      <p className="mb-6 text-muted">Accedi per vedere il tuo calendario.</p>
-      <form onSubmit={onSubmit} className="space-y-4">
-        <label className="block text-sm">
-          Email
-          <TextField name="email" type="email" required autoComplete="username" className="mt-1" />
-        </label>
-        <label className="block text-sm">
-          Password
-          <TextField name="password" type="password" required autoComplete="current-password" className="mt-1" />
-        </label>
-        {error ? (
-          <p role="alert" className="text-sm text-accent">
-            {error}
-          </p>
+    <main className="login-shell flex min-h-dvh items-center justify-center px-6 py-10">
+      <section className="login-panel w-full max-w-sm rounded-[24px] border border-border p-6 sm:p-7">
+        <h1 className="mb-1 text-3xl font-bold text-primary">Watchly</h1>
+        <p className="mb-6 text-muted">Accedi per vedere il tuo calendario.</p>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <label className="block text-sm">
+            Email
+            <TextField name="email" type="email" required autoComplete="username" className="mt-1" />
+          </label>
+          <label className="block text-sm">
+            Password
+            <TextField name="password" type="password" required autoComplete="current-password" className="mt-1" />
+          </label>
+          {error ? (
+            <p role="alert" className="text-sm text-accent">
+              {error}
+            </p>
+          ) : null}
+          <Button type="submit" disabled={pending} className="w-full">
+            {pending ? 'Accesso…' : 'Accedi'}
+          </Button>
+        </form>
+        {isMockApi ? (
+          <p className="mt-6 text-xs text-muted">Modalità demo: backend simulato, qualsiasi credenziale è accettata.</p>
         ) : null}
-        <Button type="submit" disabled={pending} className="w-full">
-          {pending ? 'Accesso…' : 'Accedi'}
-        </Button>
-      </form>
-      {isMockApi ? (
-        <p className="mt-6 text-xs text-muted">Modalità demo: backend simulato, qualsiasi credenziale è accettata.</p>
-      ) : null}
+      </section>
     </main>
   );
 }
