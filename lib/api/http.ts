@@ -253,6 +253,13 @@ export const httpApi: WatchlyApi = {
         json: { email, password },
       }),
     ),
+  loginWithGoogle: async (credential) =>
+    mapSessionUser(
+      await request<BackendSessionUser>('/auth/google', {
+        method: 'POST',
+        json: { credential },
+      }),
+    ),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
   me: async () => mapSessionUser(await request<BackendSessionUser>('/me')),
   search: async (q, kind: SeriesKind | 'all', source: CatalogSource | 'all', signal) => {
