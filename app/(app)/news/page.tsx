@@ -34,7 +34,8 @@ export default function NewsPage() {
             <li key={n.id}>
               <Card className="p-5">
                 <p className="text-xs text-muted">
-                  {n.source} · {formatDateTime(n.publishedAt)}
+                  {n.source}
+                  {n.publishedAt ? ` · ${formatDateTime(n.publishedAt)}` : null}
                 </p>
                 <h2 className="mt-1 text-[16px] font-bold">{n.title}</h2>
                 {n.excerpt ? <p className="mt-2 text-sm leading-6 text-muted">{n.excerpt}</p> : null}

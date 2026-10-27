@@ -1,79 +1,70 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { Info } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 import { SeriesCard } from '@/components/series/series-card';
-import { Chip, SegmentedTabs, TextField } from '@/components/ui/controls';
+import { Chip, TextField } from '@/components/ui/controls';
 import { EmptyState, ErrorState, ListSkeleton, PageHeader } from '@/components/ui/feedback';
-import { api, type CatalogSource, type SeriesKind, sourceLabels } from '@/lib/api';
+import { api, sourceLabels } from '@/lib/api';
 
-type KindFilter = SeriesKind | 'all';
+type AnimeSourceFilter = 'all' | 'kitsu' | 'anilist';
 
-type SourceFilter = CatalogSource | 'all';
-
-const kindItems: Array<{ value: KindFilter; label: string }> = [
-  { value: 'all', label: 'Tutti' },
-  { value: 'anime', label: 'Anime' },
-  { value: 'tv', label: 'Serie TV' },
+const sourceItems: Array<{ value: AnimeSourceFilter; label: string }> = [
+  { value: 'all', label: 'Tutte' },
+  { value: 'kitsu', label: sourceLabels.kitsu },
+  { value: 'anilist', label: sourceLabels.anilist },
 ];
 
 export default function SearchPage() {
   const [text, setText] = useState('');
   const [debounced, setDebounced] = useState('');
-  const [kind, setKind] = useState<KindFilter>('anime');
-  const [source, setSource] = useState<SourceFilter>('all');
+  const [source, setSource] = useState<AnimeSourceFilter>('all');
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(text.trim()), 400);
     return () => clearTimeout(t);
   }, [text]);
 
-  const changeKind = (next: KindFilter) => {
-    setKind(next);
-    if (next === 'tv') setSource('tmdb');
-    if (next === 'anime' && source === 'tmdb') setSource('all');
-  };
-
-  const placeholder = useMemo(() => {
-    if (kind === 'anime') return 'Cerca un anime';
-    if (kind === 'tv') return 'Cerca una serie TV';
-    return 'Cerca anime o serie TV';
-  }, [kind]);
-
   const enabled = debounced.length >= 2;
   const results = useQuery({
-    queryKey: ['search', debounced, kind, source],
-    queryFn: ({ signal }) => api.search(debounced, kind, source, signal),
+    queryKey: ['search', debounced, 'anime', source],
+    queryFn: ({ signal }) => api.search(debounced, 'anime', source, signal),
     enabled,
   });
 
-  const sourceItems = useMemo(() => {
-    const allItem: Array<{ value: SourceFilter; label: string }> = [{ value: 'all', label: 'Tutte' }];
-
-    if (kind === 'tv') return [{ value: 'tmdb' as const, label: sourceLabels.tmdb }];
-
-    if (kind === 'anime') {
-      return [
-        ...allItem,
-        { value: 'kitsu' as const, label: sourceLabels.kitsu },
-        { value: 'anilist' as const, label: sourceLabels.anilist },
-      ];
-    }
-
-    return [
-      ...allItem,
-      ...(Object.keys(sourceLabels) as CatalogSource[]).map((s) => ({ value: s, label: sourceLabels[s] })),
-    ];
-  }, [kind]);
-
   return (
     <div>
-      <PageHeader eyebrow="CATALOGO" title="Cerca" />
+      <PageHeader
+        eyebrow="CATALOGO"
+        title="Cerca"
+        actions={
+          <div className="group relative">
+            <button
+              type="button"
+              aria-describedby="tv-search-tooltip"
+              aria-label="Informazioni sulla ricerca Serie TV"
+              className="mt-5 inline-flex size-9 items-center justify-center rounded-full text-accent transition-colors hover:bg-accent/10 focus-visible:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <Info aria-hidden size={20} />
+            </button>
+            <div
+              id="tv-search-tooltip"
+              role="tooltip"
+              className="pointer-events-none invisible absolute right-0 top-full z-20 mt-2 w-72 rounded-xl border border-border bg-surface p-3 text-left text-sm opacity-0 shadow-xl transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+            >
+              <p className="font-semibold text-foreground">Ricerca Serie TV sospesa</p>
+              <p className="mt-1 leading-5 text-muted">
+                Per il momento puoi cercare gli anime. La ricerca TV tornerà quando
+                l’integrazione con TMDB sarà nuovamente disponibile.
+              </p>
+            </div>
+          </div>
+        }
+      />
 
-      <SegmentedTabs value={kind} ariaLabel="Categoria" items={kindItems} onChange={changeKind} />
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <p className="text-[13px] text-muted">Fonte</p>
         {sourceItems.map((item) => (
           <Chip
@@ -91,7 +82,7 @@ export default function SearchPage() {
           type="search"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={placeholder}
+          placeholder="Cerca un anime"
           aria-label="Ricerca titoli"
           autoCapitalize="none"
           autoCorrect="off"

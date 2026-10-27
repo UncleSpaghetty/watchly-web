@@ -46,7 +46,10 @@ export default function PrivacyPage() {
           <li>
             <strong>Dati di utilizzo:</strong> serie seguite, episodi
             contrassegnati come visti, preferenze, lingua, fuso orario e stato
-            delle sincronizzazioni.
+            delle sincronizzazioni. Da questi dati Watchly calcola statistiche
+            personali come avanzamento, generi più presenti, serie più viste e
+            tempo di visione stimato sulla base delle durate pubblicate dai
+            provider.
           </li>
           <li>
             <strong>Dati tecnici:</strong> sessioni applicative, date di

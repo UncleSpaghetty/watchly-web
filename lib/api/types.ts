@@ -21,6 +21,9 @@ export interface SeriesSummary {
   year: number | null;
   posterUrl: string | null;
   synopsis: string | null;
+  genres: string[];
+  averageRating: number | null;
+  episodeRuntimeMinutes: number | null;
   following: boolean;
 }
 
@@ -36,6 +39,7 @@ export interface EpisodeDto {
   seasonNumber: number | null;
   number: number | null;
   title: string | null;
+  durationMinutes: number | null;
   /** Data civile `YYYY-MM-DD` pubblicata dal provider */
   airDate: string | null;
   source: CatalogSource;
@@ -45,7 +49,12 @@ export interface EpisodeDto {
 export interface CalendarEntry {
   date: string;
   episodeId: string;
-  series: { id: string; title: string; kind: SeriesKind; posterUrl: string | null };
+  series: {
+    id: string;
+    title: string;
+    kind: SeriesKind;
+    posterUrl: string | null;
+  };
   episodeNumber: number | null;
   seasonNumber: number | null;
   episodeTitle: string | null;
@@ -77,7 +86,7 @@ export interface NewsItem {
   source: string;
   title: string;
   excerpt: string | null;
-  publishedAt: string;
+  publishedAt: string | null;
   imageUrl: string | null;
   url: string;
   /** Solo se l'associazione è certa */
@@ -92,6 +101,53 @@ export interface NewsPage {
 export interface SessionUser {
   id: string;
   name: string;
+}
+
+export type DashboardPeriodWeeks = 4 | 12 | 26 | 52;
+
+export interface DashboardData {
+  generatedAt: string;
+  timezone: string;
+  periodWeeks: DashboardPeriodWeeks;
+  kpis: {
+    followedSeries: number;
+    watchedEpisodes: number;
+    airedEpisodes: number;
+    completionPercentage: number;
+    backlogEpisodes: number;
+    upcoming7Days: number;
+    upcoming30Days: number;
+    estimatedWatchMinutes: number;
+    durationCoveragePercentage: number;
+    averageProviderRating: number | null;
+    ratedSeries: number;
+    currentActivityStreak: number;
+    longestActivityStreak: number;
+  };
+  activity: Array<{ periodStart: string; watchedCount: number }>;
+  watchlistBreakdown: { anime: number; tv: number };
+  genres: {
+    basis: 'watched_episodes' | 'followed_series';
+    items: Array<{ name: string; count: number }>;
+  };
+  seriesProgress: Array<{
+    seriesId: string;
+    title: string;
+    posterUrl: string | null;
+    kind: SeriesKind;
+    watched: number;
+    aired: number;
+    percentage: number;
+    backlog: number;
+    averageRating: number | null;
+  }>;
+  topSeries: Array<{
+    seriesId: string;
+    title: string;
+    posterUrl: string | null;
+    watched: number;
+    estimatedMinutes: number;
+  }>;
 }
 
 export interface SyncResult {
@@ -120,7 +176,13 @@ export interface WatchlyApi {
   loginWithGoogle(credential: string): Promise<SessionUser>;
   logout(): Promise<void>;
   me(): Promise<SessionUser>;
-  search(q: string, kind: SeriesKind | 'all', source: CatalogSource | 'all', signal?: AbortSignal): Promise<SeriesSummary[]>;
+  dashboard(weeks: DashboardPeriodWeeks): Promise<DashboardData>;
+  search(
+    q: string,
+    kind: SeriesKind | 'all',
+    source: CatalogSource | 'all',
+    signal?: AbortSignal,
+  ): Promise<SeriesSummary[]>;
   getSeries(id: string): Promise<SeriesDetail>;
   getEpisodes(id: string): Promise<EpisodeDto[]>;
   following(): Promise<FollowingItem[]>;
@@ -130,7 +192,9 @@ export interface WatchlyApi {
   setWatched(episodeId: string, watched: boolean): Promise<void>;
   sync(seriesId?: string): Promise<SyncResult>;
   getSettings(): Promise<UserSettings>;
-  patchSettings(patch: Partial<Pick<UserSettings, 'notificationsEnabled'>>): Promise<UserSettings>;
+  patchSettings(
+    patch: Partial<Pick<UserSettings, 'notificationsEnabled'>>,
+  ): Promise<UserSettings>;
   news(): Promise<NewsPage>;
   registerPush(sub: PushSubscriptionPayload): Promise<{ id: string }>;
   unregisterPush(id: string): Promise<void>;

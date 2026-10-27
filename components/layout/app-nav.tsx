@@ -4,10 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import {
   CalendarDays,
   Heart,
-  Newspaper,
+  LayoutDashboard,
   Search,
   Settings,
   Sparkles,
+  Newspaper,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -21,8 +22,9 @@ const sections = [
     label: 'Esplora',
     items: [
       { href: '/', label: 'Calendario', Icon: CalendarDays },
-      { href: '/search', label: 'Cerca', Icon: Search },
+      { href: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
       { href: '/news', label: 'News', Icon: Newspaper },
+      { href: '/search', label: 'Cerca', Icon: Search },
     ],
   },
   {
