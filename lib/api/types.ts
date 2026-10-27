@@ -101,6 +101,10 @@ export interface NewsPage {
 export interface SessionUser {
   id: string;
   name: string;
+  email: string;
+  createdAt: string;
+  timezone: string;
+  locale: string;
 }
 
 export type DashboardPeriodWeeks = 4 | 12 | 26 | 52;

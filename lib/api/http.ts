@@ -115,6 +115,9 @@ interface BackendSessionUser {
   id: string;
   email: string;
   display_name: string | null;
+  created_at: string;
+  timezone: string;
+  locale: string;
 }
 
 interface BackendNewsItem {
@@ -313,6 +316,10 @@ function mapSessionUser(item: BackendSessionUser): SessionUser {
   return {
     id: item.id,
     name: item.display_name || item.email,
+    email: item.email,
+    createdAt: item.created_at,
+    timezone: item.timezone || 'Europe/Rome',
+    locale: item.locale || 'it-IT',
   };
 }
 
