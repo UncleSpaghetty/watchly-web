@@ -1,11 +1,21 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Bell,
+  Globe2,
+  Layers3,
+  Palette,
+  RefreshCw,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 
 import { Card, SelectField, TextField } from "@/components/ui/controls";
+import { ThemeControl } from "@/components/theme/theme-control";
 import {
   Button,
   ErrorState,
@@ -27,6 +37,34 @@ import {
 
 const PUSH_ID_KEY = "watchly-push-id";
 const VAPID = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
+
+function SettingToggle({
+  checked,
+  disabled,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+  label: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      className="setting-toggle-chip"
+      onClick={() => onChange(!checked)}
+    >
+      <span className="setting-toggle-indicator" aria-hidden>
+        {checked ? "✓" : ""}
+      </span>
+      <span>{label}</span>
+    </button>
+  );
+}
 
 async function clearBrowserCaches() {
   if ("caches" in window) {
@@ -184,29 +222,27 @@ export default function SettingsPage() {
   const s = settings.data;
 
   return (
-    <div className="space-y-6">
+    <div className="settings-page">
       <PageHeader
-        eyebrow="PREFERENZE"
         title="Impostazioni"
-        subtitle="Lingua, notifiche e stato dei dati."
+        subtitle="Personalizza la tua esperienza su Watchly."
       />
 
       <Card>
-        <h2 className="text-[16px] font-bold">Notifiche</h2>
+        <h2 className="settings-section-heading">
+          <Bell size={20} aria-hidden /> Notifiche
+        </h2>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Scegli quando ricevere gli avvisi. Le preferenze per singola serie hanno priorità.
+          Scegli quando ricevere gli avvisi. Le preferenze per singola serie
+          hanno priorità.
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <label className="flex items-center gap-3 text-sm">
-            <input
-              type="checkbox"
-              checked={s.notificationsEnabled}
-              disabled={pushBlocked || togglePush.isPending}
-              onChange={(e) => togglePush.mutate(e.target.checked)}
-              className="h-5 w-5 accent-primary"
-            />
-            Abilita notifiche
-          </label>
+          <SettingToggle
+            checked={s.notificationsEnabled}
+            disabled={pushBlocked || togglePush.isPending}
+            label="Abilita notifiche"
+            onChange={(checked) => togglePush.mutate(checked)}
+          />
           <Button
             variant="ghost"
             disabled={
@@ -262,7 +298,9 @@ export default function SettingsPage() {
               value={s.notificationLocalTime}
               disabled={updateSettings.isPending}
               onChange={(event) =>
-                updateSettings.mutate({ notificationLocalTime: event.target.value })
+                updateSettings.mutate({
+                  notificationLocalTime: event.target.value,
+                })
               }
               className="mt-2"
             />
@@ -274,7 +312,8 @@ export default function SettingsPage() {
               disabled={updateSettings.isPending}
               onChange={(event) =>
                 updateSettings.mutate({
-                  notificationLeadDays: Number(event.target.value) as 0 | 1 | 3 | 7,
+                  notificationLeadDays: Number(event.target.value) as
+                    0 | 1 | 3 | 7,
                 })
               }
               className="mt-2 w-full"
@@ -290,7 +329,9 @@ export default function SettingsPage() {
             <TextField
               value={s.timezone}
               disabled={updateSettings.isPending}
-              onBlur={(event) => updateSettings.mutate({ timezone: event.target.value })}
+              onBlur={(event) =>
+                updateSettings.mutate({ timezone: event.target.value })
+              }
               onChange={() => undefined}
               readOnly
               className="mt-2"
@@ -303,7 +344,9 @@ export default function SettingsPage() {
               value={s.notificationQuietStart ?? ""}
               disabled={updateSettings.isPending}
               onChange={(event) =>
-                updateSettings.mutate({ notificationQuietStart: event.target.value || null })
+                updateSettings.mutate({
+                  notificationQuietStart: event.target.value || null,
+                })
               }
               className="mt-2"
             />
@@ -315,69 +358,96 @@ export default function SettingsPage() {
               value={s.notificationQuietEnd ?? ""}
               disabled={updateSettings.isPending}
               onChange={(event) =>
-                updateSettings.mutate({ notificationQuietEnd: event.target.value || null })
+                updateSettings.mutate({
+                  notificationQuietEnd: event.target.value || null,
+                })
               }
               className="mt-2"
             />
           </label>
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {([
-            ["notifyReleases", "Uscite episodi"],
-            ["notifyScheduleChanges", "Cambi di programmazione"],
-            ["notifyNewSeasons", "Nuove stagioni"],
-            ["notifyNews", "News sui titoli seguiti"],
-            ["weeklyDigest", "Riepilogo settimanale"],
-          ] as const).map(([field, label]) => (
-            <label key={field} className="flex items-center gap-3 text-sm">
-              <input
-                type="checkbox"
-                checked={s[field]}
-                disabled={updateSettings.isPending}
-                onChange={(event) => updateSettings.mutate({ [field]: event.target.checked })}
-                className="h-5 w-5 accent-primary"
-              />
-              {label}
-            </label>
+          {(
+            [
+              ["notifyReleases", "Uscite episodi"],
+              ["notifyScheduleChanges", "Cambi di programmazione"],
+              ["notifyNewSeasons", "Nuove stagioni"],
+              ["notifyNews", "News sui titoli seguiti"],
+              ["weeklyDigest", "Riepilogo settimanale"],
+            ] as const
+          ).map(([field, label]) => (
+            <SettingToggle
+              key={field}
+              checked={s[field]}
+              disabled={updateSettings.isPending}
+              label={label}
+              onChange={(checked) =>
+                updateSettings.mutate({ [field]: checked })
+              }
+            />
           ))}
         </div>
         {updateSettings.isError ? (
-          <div className="mt-3"><ErrorState error={updateSettings.error} /></div>
+          <div className="mt-3">
+            <ErrorState error={updateSettings.error} />
+          </div>
         ) : null}
       </Card>
 
       <Card>
-        <h2 className="text-[16px] font-bold">Servizi preferiti</h2>
+        <h2 className="settings-section-heading">
+          <Layers3 size={20} aria-hidden /> Piattaforme preferite
+        </h2>
         <p className="mt-2 text-sm leading-6 text-muted">
-          I servizi selezionati compaiono per primi nella sezione “Dove guardare”.
+          I servizi selezionati compaiono per primi nella sezione “Dove
+          guardare”.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          {["Netflix", "Crunchyroll", "Amazon Prime Video", "Disney Plus", "Apple TV Plus"].map((service) => {
+          {[
+            "Netflix",
+            "Crunchyroll",
+            "Amazon Prime Video",
+            "Disney Plus",
+            "Apple TV Plus",
+          ].map((service) => {
             const selected = s.preferredServices.includes(service);
             return (
-              <label key={service} className="flex items-center gap-2 rounded-full border border-border px-3 py-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={selected}
-                  disabled={updateSettings.isPending}
-                  onChange={() =>
-                    updateSettings.mutate({
-                      preferredServices: selected
-                        ? s.preferredServices.filter((item) => item !== service)
-                        : [...s.preferredServices, service],
-                    })
-                  }
-                  className="accent-primary"
-                />
+              <button
+                type="button"
+                key={service}
+                aria-pressed={selected}
+                disabled={updateSettings.isPending}
+                className="setting-choice-chip"
+                onClick={() =>
+                  updateSettings.mutate({
+                    preferredServices: selected
+                      ? s.preferredServices.filter((item) => item !== service)
+                      : [...s.preferredServices, service],
+                  })
+                }
+              >
+                <span aria-hidden>{selected ? "✓" : ""}</span>
                 {service}
-              </label>
+              </button>
             );
           })}
         </div>
       </Card>
 
       <Card>
-        <h2 className="text-[16px] font-bold">Aggiornamento dati</h2>
+        <h2 className="settings-section-heading">
+          <Palette size={20} aria-hidden /> Aspetto
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          Personalizza il tema e il colore principale dell’interfaccia.
+        </p>
+        <ThemeControl />
+      </Card>
+
+      <Card>
+        <h2 className="settings-section-heading">
+          <RefreshCw size={20} aria-hidden /> Aggiornamento dati
+        </h2>
         <p className="mt-2 text-sm leading-6 text-muted">
           {s.lastSyncAt
             ? `Ultimo aggiornamento riuscito: ${formatDateTime(s.lastSyncAt)}`
@@ -410,7 +480,9 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <h2 className="text-[16px] font-bold">Profilo, fuso orario e lingua</h2>
+        <h2 className="settings-section-heading">
+          <Globe2 size={20} aria-hidden /> Lingua e fuso orario
+        </h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <label className="text-sm font-semibold">
             Nome visualizzato
@@ -420,7 +492,9 @@ export default function SettingsPage() {
               maxLength={100}
               disabled={updateSettings.isPending}
               onBlur={(event) =>
-                updateSettings.mutate({ displayName: event.target.value.trim() || null })
+                updateSettings.mutate({
+                  displayName: event.target.value.trim() || null,
+                })
               }
               className="mt-2"
             />
@@ -430,7 +504,9 @@ export default function SettingsPage() {
             <SelectField
               value={s.locale}
               disabled={updateSettings.isPending}
-              onChange={(event) => updateSettings.mutate({ locale: event.target.value })}
+              onChange={(event) =>
+                updateSettings.mutate({ locale: event.target.value })
+              }
               className="mt-2 w-full"
             >
               <option value="it-IT">Italiano</option>
@@ -442,7 +518,9 @@ export default function SettingsPage() {
             <SelectField
               value={s.timezone}
               disabled={updateSettings.isPending}
-              onChange={(event) => updateSettings.mutate({ timezone: event.target.value })}
+              onChange={(event) =>
+                updateSettings.mutate({ timezone: event.target.value })
+              }
               className="mt-2 w-full"
             >
               <option value="Europe/Rome">Europe/Rome</option>
@@ -456,7 +534,9 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <h2 className="text-[16px] font-bold">Account</h2>
+        <h2 className="settings-section-heading">
+          <UserRound size={20} aria-hidden /> Account
+        </h2>
         <p className="mt-2 text-sm leading-6 text-muted">
           Connesso come {me.data?.name ?? "…"}
         </p>
@@ -496,11 +576,17 @@ export default function SettingsPage() {
             Cache locale svuotata.
           </p>
         ) : null}
-        {deleteError ? <p role="alert" className="mt-3 text-sm text-accent">{deleteError}</p> : null}
+        {deleteError ? (
+          <p role="alert" className="mt-3 text-sm text-accent">
+            {deleteError}
+          </p>
+        ) : null}
       </Card>
 
       <Card>
-        <h2 className="text-[16px] font-bold">Informazioni legali</h2>
+        <h2 className="settings-section-heading">
+          <ShieldCheck size={20} aria-hidden /> Informazioni legali
+        </h2>
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
           <Link
             className="text-primary underline underline-offset-4"
