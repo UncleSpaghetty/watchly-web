@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 import { WatchStatusButton } from '@/components/episodes/watch-status-button';
-import { SegmentedTabs } from '@/components/ui/controls';
+import { Chip, SegmentedTabs } from '@/components/ui/controls';
 import { Button, EmptyState, ErrorState, ListSkeleton, PageHeader, StaleBanner } from '@/components/ui/feedback';
 import { api, sourceLabels, type CalendarEntry } from '@/lib/api';
 import {
@@ -30,6 +30,7 @@ export function CalendarView() {
   const [view, setView] = useState<View>('week');
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
+  const [onlyUnwatched, setOnlyUnwatched] = useState(false);
 
   const week = useMemo(() => getRomeCalendarWeek(offset), [offset]);
   const month = useMemo(() => getRomeCalendarMonth(offset), [offset]);
@@ -42,7 +43,10 @@ export function CalendarView() {
   });
   const watched = useWatchedMutation();
 
-  const entries = useMemo(() => calendar.data?.entries ?? [], [calendar.data]);
+  const entries = useMemo(() => {
+    const source = calendar.data?.entries ?? [];
+    return onlyUnwatched ? source.filter((entry) => !entry.watchedAt) : source;
+  }, [calendar.data, onlyUnwatched]);
   const byDay = useMemo(() => {
     const map = new Map<string, CalendarEntry[]>();
     for (const e of entries) map.set(e.date, [...(map.get(e.date) ?? []), e]);
@@ -88,6 +92,11 @@ export function CalendarView() {
       <PageHeader eyebrow="WATCHLY" title="Calendario" subtitle="Uscite degli episodi che segui" />
 
       <SegmentedTabs value={view} ariaLabel="Vista" items={viewItems} onChange={changeView} />
+      <div className="mt-3">
+        <Chip selected={onlyUnwatched} onClick={() => setOnlyUnwatched((value) => !value)}>
+          Solo da vedere
+        </Chip>
+      </div>
 
       <section className="calendar-panel mt-5 rounded-[20px] border border-border bg-surface/95 p-3.5 sm:p-4">
         <div className="flex items-center justify-between">
@@ -166,6 +175,7 @@ export function CalendarView() {
           {visibleEntries.map((e, index) => {
             const isPast = e.date < today;
             const isToday = e.date === today;
+            const isFuture = e.date > today;
             const shortWeekday = new Intl.DateTimeFormat('it-IT', {
               timeZone: 'UTC',
               weekday: 'short',
@@ -207,7 +217,8 @@ export function CalendarView() {
                 </div>
                 <WatchStatusButton
                   watched={!!e.watchedAt}
-                  disabled={watched.isPending}
+                  disabled={watched.isPending || isFuture}
+                  disabledLabel={isFuture ? 'Non ancora uscito' : undefined}
                   onToggle={() =>
                     watched.mutate({
                       episodeId: e.episodeId,

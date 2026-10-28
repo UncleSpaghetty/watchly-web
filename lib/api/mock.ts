@@ -10,6 +10,7 @@ import {
   type SeriesDetail,
   type SeriesSummary,
   type UserSettings,
+  type WatchStatus,
   type WatchlyApi,
 } from './types';
 
@@ -18,11 +19,13 @@ import {
 interface MockState {
   user: string | null;
   following: string[];
-  watched: Record<string, string>;
-  settings: Pick<
-    UserSettings,
-    'notificationsEnabled' | 'lastSyncAt' | 'lastSyncStatus'
+  watchlist: Record<
+    string,
+    { status: WatchStatus; favorite: boolean; notificationsEnabled: boolean | null }
   >;
+  watched: Record<string, string>;
+  settings: UserSettings;
+  newsState: Record<string, { saved: boolean; readAt: string | null }>;
   pushId: string | null;
 }
 
@@ -39,16 +42,35 @@ const DEMO_USER = {
 const defaultState = (): MockState => ({
   user: null,
   following: ['s1'],
+  watchlist: {
+    s1: { status: 'watching', favorite: true, notificationsEnabled: null },
+  },
   watched: {
     's1-e1': new Date(Date.now() - 8 * 86_400_000).toISOString(),
     's1-e2': new Date(Date.now() - 2 * 86_400_000).toISOString(),
     's1-e3': new Date(Date.now() - 86_400_000).toISOString(),
   },
   settings: {
+    displayName: 'Demo',
+    timezone: 'Europe/Rome',
+    locale: 'it-IT',
     notificationsEnabled: false,
+    notificationLocalTime: '12:00',
+    notificationQuietStart: '22:00',
+    notificationQuietEnd: '08:00',
+    notificationLeadDays: 0,
+    notifyReleases: true,
+    notifyScheduleChanges: true,
+    notifyNewSeasons: true,
+    notifyNews: false,
+    weeklyDigest: false,
+    preferredServices: [],
+    pushAvailable: true,
+    pushSubscriptions: 0,
     lastSyncAt: null,
     lastSyncStatus: null,
   },
+  newsState: {},
   pushId: null,
 });
 
@@ -58,11 +80,17 @@ function load(): MockState {
   if (typeof window === 'undefined') return memory;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw)
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<MockState>;
+      const base = defaultState();
       memory = {
-        ...defaultState(),
-        ...(JSON.parse(raw) as Partial<MockState>),
+        ...base,
+        ...parsed,
+        settings: { ...base.settings, ...(parsed.settings ?? {}) },
+        watchlist: { ...base.watchlist, ...(parsed.watchlist ?? {}) },
+        newsState: { ...base.newsState, ...(parsed.newsState ?? {}) },
       };
+    }
   } catch {
     memory = defaultState();
   }
@@ -84,7 +112,8 @@ function requireAuth(): MockState {
   return state;
 }
 
-type CatalogEntry = Omit<SeriesSummary, 'following'> & {
+type CatalogEntry = Omit<SeriesSummary, 'following' | 'watchProviders'> & {
+  watchProviders?: SeriesSummary['watchProviders'];
   status: string | null;
   seasons: number | null;
   /** Offset del primo episodio, cadenza settimanale e numero di episodi. */
@@ -201,6 +230,7 @@ function buildEpisodes(entry: CatalogEntry): EpisodeDto[] {
       title: `Episodio ${i + 1}`,
       durationMinutes: entry.episodeRuntimeMinutes,
       airDate,
+      airAt: `${airDate}T12:00:00Z`,
       source: entry.source,
       watchedAt: state.watched[id] ?? null,
     };
@@ -212,7 +242,11 @@ function toSummary(entry: CatalogEntry, following: string[]): SeriesSummary {
   void schedule;
   void status;
   void seasons;
-  return { ...rest, following: following.includes(entry.id) };
+  return {
+    ...rest,
+    watchProviders: entry.watchProviders ?? [],
+    following: following.includes(entry.id),
+  };
 }
 
 function nextAirDate(entry: CatalogEntry): string | null {
@@ -233,6 +267,9 @@ const mockNews = (following: string[]): NewsItem[] => [
     publishedAt: new Date().toISOString(),
     imageUrl: null,
     url: 'https://example.org/news-1',
+    category: 'anime',
+    saved: false,
+    readAt: null,
     relatedSeries: [
       {
         id: 's1',
@@ -249,6 +286,9 @@ const mockNews = (following: string[]): NewsItem[] => [
     publishedAt: new Date(Date.now() - 86_400_000).toISOString(),
     imageUrl: null,
     url: 'https://example.org/news-2',
+    category: 'series',
+    saved: false,
+    readAt: null,
     relatedSeries: [],
   },
 ];
@@ -429,6 +469,10 @@ export const mockApi: WatchlyApi = {
     await delay(50);
     save({ ...load(), user: null });
   },
+  async deleteAccount() {
+    await delay(100);
+    save(defaultState());
+  },
   async me() {
     const s = requireAuth();
     return { ...DEMO_USER, name: s.user! };
@@ -437,7 +481,7 @@ export const mockApi: WatchlyApi = {
     await delay();
     return mockDashboard(weeks);
   },
-  async search(q, kind, source, signal) {
+  async search(q, filters, signal) {
     await delay(250);
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
     requireAuth();
@@ -446,15 +490,25 @@ export const mockApi: WatchlyApi = {
     return catalog
       .filter(
         (c) =>
-          (kind === 'all' || c.kind === kind) &&
-          (source === 'all' || c.source === source),
+          (filters.kind === 'all' || c.kind === filters.kind) &&
+          (filters.source === 'all' || c.source === filters.source) &&
+          (!filters.year || c.year === filters.year) &&
+          (!filters.format || c.format === filters.format) &&
+          (!filters.genre || c.genres.includes(filters.genre)),
       )
       .filter((c) =>
         [c.title, ...c.alternativeTitles].some((t) =>
           t.toLowerCase().includes(needle),
         ),
       )
-      .map((c) => toSummary(c, following));
+      .map((c) => toSummary(c, following))
+      .sort((a, b) => {
+        if (filters.sort === 'rating')
+          return (b.averageRating ?? -1) - (a.averageRating ?? -1);
+        if (filters.sort === 'year') return (b.year ?? -1) - (a.year ?? -1);
+        if (filters.sort === 'title') return a.title.localeCompare(b.title);
+        return 0;
+      });
   },
   async getSeries(id) {
     await delay();
@@ -482,14 +536,25 @@ export const mockApi: WatchlyApi = {
     const s = requireAuth();
     return s.following.flatMap((id) => {
       const entry = catalogById.get(id);
-      return entry
-        ? [
-            {
-              ...toSummary(entry, s.following),
-              nextAirDate: nextAirDate(entry),
-            },
-          ]
-        : [];
+      if (!entry) return [];
+      const episodes = buildEpisodes(entry);
+      const today = getRomeTodayIso();
+      const aired = episodes.filter((episode) => episode.airDate && episode.airDate <= today);
+      const watched = aired.filter((episode) => episode.watchedAt);
+      return [
+        {
+          ...toSummary(entry, s.following),
+          nextAirDate: nextAirDate(entry),
+          watchStatus: s.watchlist[id]?.status ?? 'in_list',
+          favorite: s.watchlist[id]?.favorite ?? false,
+          airedEpisodes: aired.length,
+          watchedEpisodes: watched.length,
+          backlogEpisodes: aired.length - watched.length,
+          nextUnwatchedEpisodeId:
+            aired.find((episode) => !episode.watchedAt)?.id ?? null,
+          notificationsEnabled: s.watchlist[id]?.notificationsEnabled ?? null,
+        },
+      ];
     });
   },
   async follow(id) {
@@ -497,12 +562,46 @@ export const mockApi: WatchlyApi = {
     const s = requireAuth();
     if (!catalogById.has(id)) throw new ApiError(404, 'Serie non trovata.');
     if (!s.following.includes(id))
-      save({ ...s, following: [...s.following, id] });
+      save({
+        ...s,
+        following: [...s.following, id],
+        watchlist: {
+          ...s.watchlist,
+          [id]: {
+            status: 'in_list',
+            favorite: false,
+            notificationsEnabled: null,
+          },
+        },
+      });
   },
   async unfollow(id) {
     await delay(100);
     const s = requireAuth();
     save({ ...s, following: s.following.filter((f) => f !== id) });
+  },
+  async updateFollowing(id, patch) {
+    await delay(100);
+    const s = requireAuth();
+    const current = s.watchlist[id] ?? {
+      status: 'in_list',
+      favorite: false,
+      notificationsEnabled: null,
+    };
+    save({
+      ...s,
+      watchlist: {
+        ...s.watchlist,
+        [id]: {
+          status: patch.watchStatus ?? current.status,
+          favorite: patch.favorite ?? current.favorite,
+          notificationsEnabled:
+            patch.notificationsEnabled === undefined
+              ? current.notificationsEnabled
+              : patch.notificationsEnabled,
+        },
+      },
+    });
   },
   async calendar(from, to) {
     await delay();
@@ -550,9 +649,39 @@ export const mockApi: WatchlyApi = {
     await delay(100);
     const s = requireAuth();
     const next = { ...s.watched };
+    const episode = catalog.flatMap(buildEpisodes).find((item) => item.id === episodeId);
+    if (watched && episode?.airDate && episode.airDate > getRomeTodayIso())
+      throw new ApiError(409, 'Non puoi segnare come visto un episodio non ancora uscito.');
     if (watched) next[episodeId] = new Date().toISOString();
     else delete next[episodeId];
     save({ ...s, watched: next });
+  },
+  async setSeriesWatched(seriesId, watched) {
+    await delay(150);
+    const s = requireAuth();
+    const entry = catalogById.get(seriesId);
+    if (!entry || !s.following.includes(seriesId))
+      throw new ApiError(404, 'Serie non presente nella watchlist.');
+    const today = getRomeTodayIso();
+    const episodes = buildEpisodes(entry);
+    const eligible = episodes.filter((episode) => episode.airDate && episode.airDate <= today);
+    const next = { ...s.watched };
+    let updated = 0;
+    for (const episode of episodes) {
+      if (watched && eligible.some((item) => item.id === episode.id)) {
+        if (!next[episode.id]) updated += 1;
+        next[episode.id] = new Date().toISOString();
+      } else if (!watched && next[episode.id]) {
+        delete next[episode.id];
+        updated += 1;
+      }
+    }
+    save({ ...s, watched: next });
+    return {
+      updated,
+      eligible: watched ? eligible.length : 0,
+      skippedFuture: watched ? episodes.length - eligible.length : 0,
+    };
   },
   async sync() {
     await delay(800);
@@ -575,9 +704,47 @@ export const mockApi: WatchlyApi = {
     save({ ...s, settings });
     return settings;
   },
-  async news() {
+  async news(filters = {}) {
     await delay();
-    return { configured: true, items: mockNews(requireAuth().following) };
+    const s = requireAuth();
+    const needle = filters.q?.toLowerCase();
+    const items = mockNews(s.following).map((item) => ({
+      ...item,
+      category: item.category ?? 'series',
+      saved: s.newsState[item.id]?.saved ?? false,
+      readAt: s.newsState[item.id]?.readAt ?? null,
+    }));
+    return {
+      configured: true,
+      items: items.filter(
+        (item) =>
+          (!filters.followed || item.relatedSeries.some((series) => series.following)) &&
+          (!filters.saved || item.saved) &&
+          (!filters.unread || !item.readAt) &&
+          (!filters.category || item.category === filters.category) &&
+          (!needle || item.title.toLowerCase().includes(needle)),
+      ),
+    };
+  },
+  async updateNews(id, patch) {
+    await delay(80);
+    const s = requireAuth();
+    const current = s.newsState[id] ?? { saved: false, readAt: null };
+    save({
+      ...s,
+      newsState: {
+        ...s.newsState,
+        [id]: {
+          saved: patch.saved ?? current.saved,
+          readAt:
+            patch.read === undefined
+              ? current.readAt
+              : patch.read
+                ? new Date().toISOString()
+                : null,
+        },
+      },
+    });
   },
   async registerPush() {
     await delay(100);
