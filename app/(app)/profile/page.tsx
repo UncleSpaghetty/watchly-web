@@ -1,18 +1,17 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { Settings } from 'lucide-react';
-import Link from 'next/link';
+import { useQuery } from "@tanstack/react-query";
+import { Settings } from "lucide-react";
+import Link from "next/link";
 
-import { DashboardView } from '@/components/dashboard/dashboard-view';
-import { Card } from '@/components/ui/controls';
-import { ErrorState, ListSkeleton, PageHeader } from '@/components/ui/feedback';
-import { api } from '@/lib/api';
-import { formatDateTime } from '@/lib/date/italy';
+import { Card } from "@/components/ui/controls";
+import { ErrorState, ListSkeleton, PageHeader } from "@/components/ui/feedback";
+import { api } from "@/lib/api";
+import { formatDateTime } from "@/lib/date/italy";
 
 export default function ProfilePage() {
   const me = useQuery({
-    queryKey: ['me'],
+    queryKey: ["me"],
     queryFn: () => api.me(),
     staleTime: 5 * 60_000,
   });
@@ -23,7 +22,7 @@ export default function ProfilePage() {
   }
 
   const user = me.data;
-  const initial = user.name.charAt(0).toLocaleUpperCase('it');
+  const initial = user.name.charAt(0).toLocaleUpperCase("it");
 
   return (
     <div className="space-y-8">
@@ -46,7 +45,7 @@ export default function ProfilePage() {
       <Card>
         <div className="flex items-center gap-4">
           <span
-            className="flex size-16 shrink-0 items-center justify-center rounded-[20px] bg-primary text-2xl font-bold text-background"
+            className="flex size-16 shrink-0 items-center justify-center rounded-[20px] bg-primary text-2xl font-bold text-[#061511]"
             aria-hidden="true"
           >
             {initial}
@@ -78,18 +77,6 @@ export default function ProfilePage() {
           </div>
         </dl>
       </Card>
-
-      <section aria-labelledby="profile-dashboard-title">
-        <div className="mb-4">
-          <p className="text-xs font-bold tracking-[0.2em] text-primary">
-            IL TUO ANDAMENTO
-          </p>
-          <h2 id="profile-dashboard-title" className="mt-2 text-2xl font-bold">
-            Dashboard
-          </h2>
-        </div>
-        <DashboardView showHeader={false} />
-      </section>
     </div>
   );
 }

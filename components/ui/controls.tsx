@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import type React from 'react';
+import type React from "react";
 
 function cx(...values: Array<string | false | null | undefined>) {
-  return values.filter(Boolean).join(' ');
+  return values.filter(Boolean).join(" ");
 }
 
 const baseField =
-  'w-full rounded-[14px] border border-border bg-surface px-4 py-3.5 text-[15px] placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary';
+  "ui-field w-full rounded-[14px] border border-border bg-surface px-4 py-3.5 text-[15px] placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 export function TextField(
   props: React.InputHTMLAttributes<HTMLInputElement> & { className?: string },
@@ -24,7 +24,7 @@ export function SelectField(
     <select
       {...rest}
       className={cx(
-        'min-h-11 rounded-[14px] border border-border bg-surface px-4 py-3 text-[15px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+        "ui-field min-h-11 rounded-[14px] border border-border bg-surface px-4 py-3 text-[15px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
         className,
       )}
     />
@@ -42,10 +42,10 @@ export function Chip({
       aria-pressed={selected}
       {...props}
       className={cx(
-        'rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-[transform,background-color,border-color,color] hover:-translate-y-0.5 active:translate-y-0',
+        "ui-chip min-h-11 rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-[transform,background-color,border-color,color] hover:-translate-y-0.5 active:translate-y-0",
         selected
-          ? 'border-primary bg-primary text-surface'
-          : 'border-border text-muted hover:bg-soft hover:text-foreground',
+          ? "border-primary bg-primary text-[#061511]"
+          : "border-border text-muted hover:bg-soft hover:text-foreground",
         className,
       )}
     />
@@ -70,7 +70,7 @@ export function SegmentedTabs<T extends string | number>({
       role="tablist"
       aria-label={ariaLabel}
       className={cx(
-        'flex rounded-[14px] border border-border bg-surface p-1',
+        "flex rounded-[14px] border border-border bg-surface p-1",
         className,
       )}
     >
@@ -84,10 +84,10 @@ export function SegmentedTabs<T extends string | number>({
             aria-selected={selected}
             onClick={() => onChange(item.value)}
             className={cx(
-              'flex-1 rounded-[10px] px-3 py-2.5 text-sm font-semibold transition-[transform,background-color,color] active:scale-[0.98]',
+              "flex-1 rounded-[10px] px-3 py-2.5 text-sm font-semibold transition-[transform,background-color,color] active:scale-[0.98]",
               selected
-                ? 'bg-soft text-primary'
-                : 'text-muted hover:text-foreground',
+                ? "bg-soft text-primary"
+                : "text-muted hover:text-foreground",
             )}
           >
             {item.label}
@@ -106,7 +106,7 @@ export function Card({
     <div
       {...props}
       className={cx(
-        'motion-card rounded-[18px] border border-border bg-surface/95 p-5',
+        "motion-card rounded-[18px] border border-border bg-surface/95 p-5",
         className,
       )}
     />

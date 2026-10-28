@@ -1,44 +1,52 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { CalendarRange, ChevronLeft, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useQuery } from "@tanstack/react-query";
+import { CalendarRange, ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 
-import { WatchStatusButton } from '@/components/episodes/watch-status-button';
-import { Chip, SegmentedTabs } from '@/components/ui/controls';
-import { Button, EmptyState, ErrorState, ListSkeleton, PageHeader, StaleBanner } from '@/components/ui/feedback';
-import { api, sourceLabels, type CalendarEntry } from '@/lib/api';
+import { WatchStatusButton } from "@/components/episodes/watch-status-button";
+import { Chip, SegmentedTabs } from "@/components/ui/controls";
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  ListSkeleton,
+  PageHeader,
+  StaleBanner,
+} from "@/components/ui/feedback";
+import { api, sourceLabels, type CalendarEntry } from "@/lib/api";
 import {
   formatLongDate,
   getMonthRange,
   getRomeCalendarMonth,
   getRomeCalendarWeek,
   getRomeTodayIso,
-} from '@/lib/date/italy';
-import { useWatchedMutation } from '@/lib/hooks';
+} from "@/lib/date/italy";
+import { useWatchedMutation } from "@/lib/hooks";
 
-type View = 'week' | 'month';
-const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+type View = "week" | "month";
+const WEEKDAYS = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 
 const viewItems: Array<{ value: View; label: string }> = [
-  { value: 'week', label: 'Settimana' },
-  { value: 'month', label: 'Mese' },
+  { value: "week", label: "Settimana" },
+  { value: "month", label: "Mese" },
 ];
 
 export function CalendarView() {
-  const [view, setView] = useState<View>('week');
+  const [view, setView] = useState<View>("week");
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [onlyUnwatched, setOnlyUnwatched] = useState(false);
 
   const week = useMemo(() => getRomeCalendarWeek(offset), [offset]);
   const month = useMemo(() => getRomeCalendarMonth(offset), [offset]);
-  const range = view === 'week' ? { from: week.from, to: week.to } : getMonthRange(month);
-  const label = view === 'week' ? week.label : month.label;
+  const range =
+    view === "week" ? { from: week.from, to: week.to } : getMonthRange(month);
+  const label = view === "week" ? week.label : month.label;
 
   const calendar = useQuery({
-    queryKey: ['calendar', range.from, range.to],
+    queryKey: ["calendar", range.from, range.to],
     queryFn: () => api.calendar(range.from, range.to),
   });
   const watched = useWatchedMutation();
@@ -76,24 +84,39 @@ export function CalendarView() {
         disabled={count === 0}
         onClick={() => setSelected((current) => (current === iso ? null : iso))}
         aria-pressed={isSelected}
-        aria-label={`${formatLongDate(iso)}${count ? `, ${count} episodi` : ''}`}
+        aria-label={`${formatLongDate(iso)}${count ? `, ${count} episodi` : ""}`}
         className={`calendar-day flex min-h-14 flex-col items-center justify-center gap-1 rounded-[14px] text-sm ${
-          isSelected ? 'calendar-day-selected text-background' : 'text-foreground'
-        } ${iso === today ? 'calendar-day-today font-bold' : ''}`}
+          isSelected
+            ? "calendar-day-selected text-[#061511]"
+            : "text-foreground"
+        } ${iso === today ? "calendar-day-today font-bold" : ""}`}
       >
         {day}
-        <span className={`h-1.5 w-1.5 rounded-full ${count ? 'bg-accent' : 'bg-transparent'}`} />
+        <span
+          className={`h-1.5 w-1.5 rounded-full ${count ? "bg-accent" : "bg-transparent"}`}
+        />
       </button>
     );
   };
 
   return (
-    <div>
-      <PageHeader eyebrow="WATCHLY" title="Calendario" subtitle="Uscite degli episodi che segui" />
+    <div className="calendar-page">
+      <PageHeader
+        title="Calendario"
+        subtitle="Uscite degli episodi che segui"
+      />
 
-      <SegmentedTabs value={view} ariaLabel="Vista" items={viewItems} onChange={changeView} />
+      <SegmentedTabs
+        value={view}
+        ariaLabel="Vista"
+        items={viewItems}
+        onChange={changeView}
+      />
       <div className="mt-3">
-        <Chip selected={onlyUnwatched} onClick={() => setOnlyUnwatched((value) => !value)}>
+        <Chip
+          selected={onlyUnwatched}
+          onClick={() => setOnlyUnwatched((value) => !value)}
+        >
           Solo da vedere
         </Chip>
       </div>
@@ -130,28 +153,38 @@ export function CalendarView() {
           </Button>
         </div>
 
-        <div className="mt-4 grid grid-cols-7 gap-1.5 text-center text-xs font-semibold text-muted" aria-hidden>
+        <div
+          className="mt-4 grid grid-cols-7 gap-1.5 text-center text-xs font-semibold text-muted"
+          aria-hidden
+        >
           {WEEKDAYS.map((d) => (
             <span key={d}>{d}</span>
           ))}
         </div>
         <div className="mt-1 grid grid-cols-7 gap-1.5">
-          {view === 'week'
+          {view === "week"
             ? week.days.map((d) => dayCell(d.iso, d.day))
-            : month.days.map((d, i) => (d ? dayCell(d.iso, d.day) : <span key={`pad-${i}`} />))}
+            : month.days.map((d, i) =>
+                d ? dayCell(d.iso, d.day) : <span key={`pad-${i}`} />,
+              )}
         </div>
       </section>
 
-      {calendar.data?.stale ? <StaleBanner lastSyncAt={calendar.data.lastSuccessfulSyncAt} /> : null}
+      {calendar.data?.stale ? (
+        <StaleBanner lastSyncAt={calendar.data.lastSuccessfulSyncAt} />
+      ) : null}
 
       <div className="mb-3 mt-7 flex flex-wrap items-end justify-between gap-2">
         <div>
           <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-primary">
             <CalendarRange size={15} aria-hidden />
-            {visibleEntries.length} {visibleEntries.length === 1 ? 'uscita' : 'uscite'}
+            {visibleEntries.length}{" "}
+            {visibleEntries.length === 1 ? "uscita" : "uscite"}
           </p>
           <h2 className="mt-1 text-[19px] font-bold first-letter:uppercase">
-            {selected ? formatLongDate(selected) : `Episodi ${view === 'week' ? 'della settimana' : 'del mese'}`}
+            {selected
+              ? formatLongDate(selected)
+              : `Episodi ${view === "week" ? "della settimana" : "del mese"}`}
           </h2>
         </div>
         {selected ? (
@@ -167,58 +200,77 @@ export function CalendarView() {
       {calendar.isPending ? (
         <ListSkeleton rows={2} />
       ) : calendar.isError ? (
-        <ErrorState error={calendar.error} onRetry={() => void calendar.refetch()} />
+        <ErrorState
+          error={calendar.error}
+          onRetry={() => void calendar.refetch()}
+        />
       ) : visibleEntries.length === 0 ? (
-        <EmptyState title={selected ? 'Nessun episodio in questo giorno' : 'Nessun episodio in questo periodo'} />
+        <EmptyState
+          title={
+            selected
+              ? "Nessun episodio in questo giorno"
+              : "Nessun episodio in questo periodo"
+          }
+        />
       ) : (
         <ul className="space-y-2.5">
           {visibleEntries.map((e, index) => {
             const isPast = e.date < today;
             const isToday = e.date === today;
             const isFuture = e.date > today;
-            const shortWeekday = new Intl.DateTimeFormat('it-IT', {
-              timeZone: 'UTC',
-              weekday: 'short',
+            const shortWeekday = new Intl.DateTimeFormat("it-IT", {
+              timeZone: "UTC",
+              weekday: "short",
             })
               .format(new Date(`${e.date}T00:00:00Z`))
-              .replace('.', '');
+              .replace(".", "");
             return (
               <li
                 key={e.episodeId}
                 style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
-                className={`episode-row list-reveal ${isPast ? 'episode-row-past' : 'episode-row-upcoming'}`}
+                className={`episode-row list-reveal ${isPast ? "episode-row-past" : "episode-row-upcoming"}`}
               >
                 <div className="w-10 shrink-0 text-center">
                   <span
-                    className={`block text-[22px] font-bold leading-none ${isPast ? 'text-muted' : 'text-primary'}`}
+                    className={`block text-[22px] font-bold leading-none ${isPast ? "text-muted" : "text-primary"}`}
                   >
                     {Number(e.date.slice(8, 10))}
                   </span>
-                  <span className="mt-1 block text-[10px] font-bold uppercase text-muted">{shortWeekday}</span>
+                  <span className="mt-1 block text-[10px] font-bold uppercase text-muted">
+                    {shortWeekday}
+                  </span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/series/${e.series.id}`}
-                    className={`block truncate text-[15px] font-bold hover:underline ${e.watchedAt ? 'text-muted line-through' : ''}`}
+                    className={`block truncate text-[15px] font-bold hover:underline ${e.watchedAt ? "text-muted line-through" : ""}`}
                   >
                     {e.series.title}
                   </Link>
                   <p className="mt-0.5 text-[13px] text-muted">
-                    {e.seasonNumber ? `S${e.seasonNumber} · ` : ''}
-                    {e.episodeNumber ? `Ep. ${e.episodeNumber}` : 'Episodio'}
-                    {e.episodeTitle ? ` — ${e.episodeTitle}` : ''}
+                    {e.seasonNumber ? `S${e.seasonNumber} · ` : ""}
+                    {e.episodeNumber ? `Ep. ${e.episodeNumber}` : "Episodio"}
+                    {e.episodeTitle ? ` — ${e.episodeTitle}` : ""}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="text-[11px] font-medium text-muted">{sourceLabels[e.source]}</span>
-                    <span className={`text-[11px] font-bold ${isPast ? 'text-muted' : 'text-primary'}`}>
-                      {isPast ? 'Già uscito' : isToday ? 'Esce oggi' : 'In arrivo'}
+                    <span className="text-[11px] font-medium text-muted">
+                      {sourceLabels[e.source]}
+                    </span>
+                    <span
+                      className={`text-[11px] font-bold ${isPast ? "text-muted" : "text-primary"}`}
+                    >
+                      {isPast
+                        ? "Già uscito"
+                        : isToday
+                          ? "Esce oggi"
+                          : "In arrivo"}
                     </span>
                   </div>
                 </div>
                 <WatchStatusButton
                   watched={!!e.watchedAt}
                   disabled={watched.isPending || isFuture}
-                  disabledLabel={isFuture ? 'Non ancora uscito' : undefined}
+                  disabledLabel={isFuture ? "Non ancora uscito" : undefined}
                   onToggle={() =>
                     watched.mutate({
                       episodeId: e.episodeId,
