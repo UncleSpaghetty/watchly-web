@@ -26,7 +26,7 @@ import { api, type NewsItem } from "@/lib/api";
 import { formatDateTime } from "@/lib/date/italy";
 import { useNewsStateMutation } from "@/lib/hooks";
 
-type Feed = "all" | "followed" | "saved";
+type Feed = "all" | "saved";
 
 const categoryItems: Array<{
   value: NewsItem["category"];
@@ -40,10 +40,9 @@ const categoryItems: Array<{
 ];
 
 export default function NewsPage() {
-  const [feed, setFeed] = useState<Feed>("followed");
+  const [feed, setFeed] = useState<Feed>("all");
   const [category, setCategory] = useState<NewsItem["category"]>(null);
   const filters = {
-    followed: feed === "followed",
     saved: feed === "saved",
     category,
   };
@@ -62,7 +61,7 @@ export default function NewsPage() {
 
       <section className="filter-panel mb-6" aria-label="Filtri del feed">
         <div className="news-feed-filters">
-          {(["followed", "all", "saved"] as const).map((value) => (
+          {(["all", "saved"] as const).map((value) => (
             <Chip
               key={value}
               selected={feed === value}
@@ -70,9 +69,7 @@ export default function NewsPage() {
             >
               {value === "all"
                 ? "Tutti"
-                : value === "followed"
-                  ? "Per te"
-                  : "Salvati"}
+                : "Salvati"}
             </Chip>
           ))}
         </div>

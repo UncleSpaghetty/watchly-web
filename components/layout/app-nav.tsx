@@ -10,7 +10,6 @@ import {
   Settings,
   Newspaper,
   Search,
-  UserRound,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -26,39 +25,16 @@ const desktopItems = [
   { href: "/settings", label: "Impostazioni", Icon: Settings },
 ] as const;
 
+const mobileItems = [
+  { href: "/home", label: "Home", Icon: LayoutDashboard },
+  { href: "/", label: "Calendario", Icon: CalendarDays },
+  { href: "/search", label: "Esplora", Icon: Search },
+  { href: "/my-series", label: "Seguiti", Icon: Heart },
+  { href: "/dashboard", label: "Statistiche", Icon: BarChart3 },
+] as const;
+
 export function AppNav() {
   const pathname = usePathname();
-  const mobileItems = pathname.startsWith("/my-series")
-    ? [
-        { href: "/home", label: "Home", Icon: LayoutDashboard },
-        { href: "/", label: "Calendario", Icon: CalendarDays },
-        { href: "/my-series", label: "Seguiti", Icon: Heart },
-        { href: "/search", label: "Esplora", Icon: Search },
-        { href: "/dashboard", label: "Statistiche", Icon: BarChart3 },
-      ]
-    : pathname.startsWith("/news")
-      ? [
-          { href: "/home", label: "Home", Icon: LayoutDashboard },
-          { href: "/", label: "Calendario", Icon: CalendarDays },
-          { href: "/news", label: "Notizie", Icon: Newspaper },
-          { href: "/search", label: "Esplora", Icon: Search },
-          { href: "/profile", label: "Profilo", Icon: UserRound },
-        ]
-      : pathname.startsWith("/settings")
-        ? [
-            { href: "/home", label: "Home", Icon: LayoutDashboard },
-            { href: "/", label: "Calendario", Icon: CalendarDays },
-            { href: "/search", label: "Esplora", Icon: Search },
-            { href: "/settings", label: "Impostazioni", Icon: Settings },
-            { href: "/profile", label: "Profilo", Icon: UserRound },
-          ]
-        : [
-            { href: "/home", label: "Home", Icon: LayoutDashboard },
-            { href: "/", label: "Calendario", Icon: CalendarDays },
-            { href: "/search", label: "Esplora", Icon: Search },
-            { href: "/my-series", label: "Seguiti", Icon: Heart },
-            { href: "/profile", label: "Profilo", Icon: UserRound },
-          ];
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
@@ -66,7 +42,7 @@ export function AppNav() {
     <aside className="app-nav pb-safe fixed inset-x-0 bottom-0 z-20 flex border-t border-border md:sticky md:top-0 md:h-dvh md:w-[218px] md:shrink-0 md:flex-col md:border-r md:border-t-0 md:p-5">
       <Link
         className="app-nav-brand hidden md:flex"
-        href="/"
+        href="/home"
         aria-label="Watchly, calendario"
       >
         <span className="app-nav-logo" aria-hidden="true">

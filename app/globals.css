@@ -360,25 +360,23 @@ body {
 }
 
 .app-nav-logo {
+  background: #071512;
   border: 1px solid color-mix(in srgb, var(--color-primary) 34%, transparent);
-  border-radius: 15px;
+  border-radius: 999px;
   box-shadow:
     0 10px 26px rgb(0 0 0 / 24%),
     0 0 24px rgb(111 191 146 / 8%);
   display: grid;
   flex: 0 0 auto;
   height: 46px;
+  isolation: isolate;
   overflow: hidden;
   place-items: center;
-  transition:
-    border-color 180ms ease,
-    transform 180ms ease;
   width: 46px;
 }
 
-.app-nav-brand:hover .app-nav-logo {
-  border-color: color-mix(in srgb, var(--color-primary) 70%, transparent);
-  transform: translateY(-1px);
+.app-nav-logo .nocturne-mark {
+  mix-blend-mode: normal;
 }
 
 .app-nav-section-label {
@@ -1746,6 +1744,7 @@ body {
   font-size: 0.65rem;
   grid-column: 2;
   line-height: 1;
+  margin-bottom: 0.5rem;
 }
 
 .following-sort-row > svg {
@@ -1759,7 +1758,6 @@ body {
   grid-column: 2;
   min-height: 1.35rem;
   min-width: 9.5rem;
-  padding: 0;
 }
 
 .news-page .filter-panel {
@@ -2135,16 +2133,6 @@ html[data-theme="light"] .dashboard-donut::after {
   clip-path: circle(48%);
   mix-blend-mode: screen;
   object-fit: cover;
-}
-
-.app-nav-logo {
-  background: #071512;
-  border-radius: 999px;
-  isolation: isolate;
-}
-
-.app-nav-logo .nocturne-mark {
-  mix-blend-mode: normal;
 }
 
 .app-main {
