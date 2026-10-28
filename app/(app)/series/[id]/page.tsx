@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 import { WatchStatusButton } from '@/components/episodes/watch-status-button';
 import { Poster } from '@/components/series/poster';
@@ -18,7 +19,7 @@ import {
   formatLongDate,
   getRomeTodayIso,
 } from '@/lib/date/italy';
-import { useSyncMutation, useWatchedMutation } from '@/lib/hooks';
+import { useSeriesWatchedMutation, useSyncMutation, useWatchedMutation } from '@/lib/hooks';
 
 export default function SeriesPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +34,13 @@ export default function SeriesPage() {
   });
   const sync = useSyncMutation(id);
   const watched = useWatchedMutation();
+  const bulkWatched = useSeriesWatchedMutation(id);
+  const settings = useQuery({ queryKey: ['settings'], queryFn: () => api.getSettings() });
+  const [nowMs, setNowMs] = useState(0);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setNowMs(Date.now()), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   if (series.isPending) return <ListSkeleton rows={3} />;
   if (series.isError) {
@@ -50,6 +58,38 @@ export default function SeriesPage() {
 
   const s = series.data;
   const today = getRomeTodayIso();
+  const episodeItems = episodes.data ?? [];
+  const nextUnwatched = episodeItems.find(
+    (episode) =>
+      !episode.watchedAt &&
+      (!episode.airAt
+        ? !!episode.airDate && episode.airDate <= today
+        : new Date(episode.airAt).getTime() <= nowMs),
+  );
+  const preferredServices = new Set(settings.data?.preferredServices ?? []);
+  const watchProviders = [...s.watchProviders].sort(
+    (left, right) =>
+      Number(preferredServices.has(right.name)) -
+      Number(preferredServices.has(left.name)),
+  );
+  const seasonProgress = Object.entries(
+    episodeItems.reduce<Record<string, { total: number; watched: number; backlog: number }>>(
+      (groups, episode) => {
+        const key = String(episode.seasonNumber ?? 1);
+        const group = groups[key] ?? { total: 0, watched: 0, backlog: 0 };
+        group.total += 1;
+        if (episode.watchedAt) group.watched += 1;
+        if (
+          !episode.watchedAt &&
+          episode.airDate &&
+          episode.airDate <= today
+        ) group.backlog += 1;
+        groups[key] = group;
+        return groups;
+      },
+      {},
+    ),
+  );
   return (
     <div>
       <button
@@ -112,6 +152,18 @@ export default function SeriesPage() {
             >
               {sync.isPending ? 'Aggiornamento…' : 'Aggiorna informazioni'}
             </Button>
+            {nextUnwatched ? (
+              <Button
+                variant="ghost"
+                onClick={() =>
+                  document
+                    .getElementById(`episode-${nextUnwatched.id}`)
+                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+              >
+                Prossimo non visto
+              </Button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -143,7 +195,75 @@ export default function SeriesPage() {
         <p className="mb-6 text-sm leading-relaxed text-muted">{s.synopsis}</p>
       ) : null}
 
-      <h2 className="mb-3 text-[17px] font-bold">Episodi</h2>
+      <section className="mb-6 rounded-[18px] border border-border bg-surface/95 p-4">
+        <h2 className="text-[17px] font-bold">Dove guardare</h2>
+        {watchProviders.length ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {watchProviders.map((provider) => (
+              <a
+                key={`${provider.id}-${provider.type}`}
+                href={provider.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full border border-border bg-soft px-3 py-2 text-sm font-semibold hover:border-primary"
+              >
+                {provider.name} · {provider.type === 'flatrate' || provider.type === 'stream' ? 'streaming' : provider.type}
+                {preferredServices.has(provider.name) ? ' · preferito' : ''}
+              </a>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-muted">
+            Nessun collegamento streaming comunicato dai provider per questo titolo.
+          </p>
+        )}
+        <p className="mt-3 text-xs text-muted">
+          I collegamenti provengono da TMDB o AniList e possono riferirsi al titolo generale: verifica il catalogo del servizio prima della visione.
+        </p>
+      </section>
+
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-[17px] font-bold">Episodi</h2>
+        {s.following && episodeItems.length ? (
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="ghost"
+              disabled={bulkWatched.isPending}
+              onClick={() => bulkWatched.mutate(true)}
+            >
+              Segna gli episodi usciti come visti
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={bulkWatched.isPending}
+              onClick={() => bulkWatched.mutate(false)}
+            >
+              Segna tutti come non visti
+            </Button>
+          </div>
+        ) : null}
+      </div>
+      {bulkWatched.data ? (
+        <p role="status" className="mb-3 text-sm text-muted">
+          Aggiornati {bulkWatched.data.updated} episodi
+          {bulkWatched.data.skippedFuture
+            ? `; ${bulkWatched.data.skippedFuture} non ancora usciti o senza data sono rimasti invariati.`
+            : '.'}
+        </p>
+      ) : null}
+      {bulkWatched.isError ? <div className="mb-3"><ErrorState error={bulkWatched.error} /></div> : null}
+      {seasonProgress.length ? (
+        <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {seasonProgress.map(([season, progress]) => (
+            <div key={season} className="rounded-[14px] border border-border bg-surface/95 p-3 text-sm">
+              <p className="font-bold">Stagione {season}</p>
+              <p className="mt-1 text-muted">
+                {progress.watched}/{progress.total} visti · {progress.backlog ? `${progress.backlog} da recuperare` : 'In pari'}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
       {episodes.isPending ? (
         <ListSkeleton rows={3} />
       ) : episodes.isError ? (
@@ -161,9 +281,13 @@ export default function SeriesPage() {
           {episodes.data.map((e, index) => {
             const episodeDate = e.airDate;
             const isPast = episodeDate ? episodeDate < today : false;
+            const isFuture = e.airAt
+              ? new Date(e.airAt).getTime() > nowMs
+              : !!episodeDate && episodeDate > today;
             return (
               <li
                 key={e.id}
+                id={`episode-${e.id}`}
                 style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
                 className={`episode-row list-reveal ${isPast ? 'episode-row-past' : 'episode-row-upcoming'}`}
               >
@@ -190,7 +314,8 @@ export default function SeriesPage() {
                 </div>
                 <WatchStatusButton
                   watched={!!e.watchedAt}
-                  disabled={watched.isPending}
+                  disabled={watched.isPending || isFuture}
+                  disabledLabel={isFuture ? 'Non ancora uscito' : undefined}
                   onToggle={() =>
                     watched.mutate({ episodeId: e.id, watched: !e.watchedAt })
                   }

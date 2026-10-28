@@ -5,6 +5,7 @@ import {
   type DashboardPeriodWeeks,
   type EpisodeDto,
   type NewsPage,
+  type NewsFilters,
   type SeriesDetail,
   type SeriesKind,
   type SeriesSummary,
@@ -33,11 +34,26 @@ interface BackendSeries {
   year: number | null;
   external_ids: BackendExternalId[];
   followed: boolean;
+  watch_providers: Array<{
+    id: string;
+    name: string;
+    url: string;
+    type: 'stream' | 'flatrate' | 'free' | 'ads' | 'buy' | 'rent';
+    source: CatalogSource;
+    logo_url?: string;
+  }>;
 }
 
 interface BackendFollowingRead {
   series: BackendSeries;
   next_air_date: string | null;
+  watch_status: import('./types').WatchStatus;
+  favorite: boolean;
+  aired_episodes: number;
+  watched_episodes: number;
+  backlog_episodes: number;
+  next_unwatched_episode_id: string | null;
+  notifications_enabled: boolean | null;
 }
 
 interface BackendFollowingList {
@@ -101,7 +117,22 @@ interface BackendEpisodeListResponse {
 }
 
 interface BackendUserSettings {
+  display_name: string | null;
+  timezone: string;
+  locale: string;
   notifications_enabled: boolean;
+  notification_local_time: string;
+  notification_quiet_start: string | null;
+  notification_quiet_end: string | null;
+  notification_lead_days: 0 | 1 | 3 | 7;
+  notify_releases: boolean;
+  notify_schedule_changes: boolean;
+  notify_new_seasons: boolean;
+  notify_news: boolean;
+  weekly_digest: boolean;
+  preferred_services: string[];
+  push_available: boolean;
+  push_subscriptions: number;
   last_successful_sync_at: string | null;
 }
 
@@ -128,6 +159,9 @@ interface BackendNewsItem {
   published_at: string | null;
   image_url: string | null;
   url: string;
+  category: import('./types').NewsItem['category'];
+  saved: boolean;
+  read_at: string | null;
   series: Array<{ id: string; title: string; followed: boolean }>;
 }
 
@@ -266,6 +300,14 @@ function mapSeries(item: BackendSeries): SeriesSummary {
     genres: item.genres ?? [],
     averageRating: item.average_rating,
     episodeRuntimeMinutes: item.episode_runtime_minutes,
+    watchProviders: (item.watch_providers ?? []).map((provider) => ({
+      id: provider.id,
+      name: provider.name,
+      url: provider.url,
+      type: provider.type,
+      source: provider.source,
+      logoUrl: provider.logo_url ?? null,
+    })),
     following: item.followed,
   };
 }
@@ -299,6 +341,7 @@ function mapEpisode(item: BackendEpisodeRead): EpisodeDto {
     title: item.title,
     durationMinutes: item.duration_minutes,
     airDate,
+    airAt: item.air_at,
     source: item.source,
     watchedAt: item.watched ? new Date().toISOString() : null,
   };
@@ -306,7 +349,22 @@ function mapEpisode(item: BackendEpisodeRead): EpisodeDto {
 
 function mapSettings(item: BackendUserSettings): UserSettings {
   return {
+    displayName: item.display_name,
+    timezone: item.timezone,
+    locale: item.locale,
     notificationsEnabled: item.notifications_enabled,
+    notificationLocalTime: item.notification_local_time,
+    notificationQuietStart: item.notification_quiet_start,
+    notificationQuietEnd: item.notification_quiet_end,
+    notificationLeadDays: item.notification_lead_days,
+    notifyReleases: item.notify_releases,
+    notifyScheduleChanges: item.notify_schedule_changes,
+    notifyNewSeasons: item.notify_new_seasons,
+    notifyNews: item.notify_news,
+    weeklyDigest: item.weekly_digest,
+    preferredServices: item.preferred_services ?? [],
+    pushAvailable: item.push_available,
+    pushSubscriptions: item.push_subscriptions,
     lastSyncAt: item.last_successful_sync_at,
     lastSyncStatus: null,
   };
@@ -401,6 +459,7 @@ export const httpApi: WatchlyApi = {
       }),
     ),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
+  deleteAccount: () => request<void>('/me', { method: 'DELETE' }),
   me: async () => mapSessionUser(await request<BackendSessionUser>('/me')),
   dashboard: async (weeks) =>
     mapDashboard(
@@ -408,12 +467,20 @@ export const httpApi: WatchlyApi = {
     ),
   search: async (
     q,
-    kind: SeriesKind | 'all',
-    source: CatalogSource | 'all',
+    filters,
     signal,
   ) => {
     const response = await request<BackendSearchResponse>(
-      `/catalog/search${qs({ q, kind: kind === 'all' ? undefined : kind, source: source === 'all' ? undefined : source })}`,
+      `/catalog/search${qs({
+        q,
+        kind: filters.kind === 'all' ? undefined : filters.kind,
+        source: filters.source === 'all' ? undefined : filters.source,
+        year: filters.year?.toString(),
+        format: filters.format,
+        genre: filters.genre,
+        status: filters.status,
+        sort: filters.sort === 'relevance' ? undefined : filters.sort,
+      })}`,
       { signal },
     );
     if (
@@ -442,6 +509,13 @@ export const httpApi: WatchlyApi = {
     return response.items.map((row) => ({
       ...mapSeries(row.series),
       nextAirDate: row.next_air_date,
+      watchStatus: row.watch_status,
+      favorite: row.favorite,
+      airedEpisodes: row.aired_episodes,
+      watchedEpisodes: row.watched_episodes,
+      backlogEpisodes: row.backlog_episodes,
+      nextUnwatchedEpisodeId: row.next_unwatched_episode_id,
+      notificationsEnabled: row.notifications_enabled,
     }));
   },
   follow: (id) =>
@@ -449,6 +523,19 @@ export const httpApi: WatchlyApi = {
   unfollow: (id) =>
     request<void>(`/me/following/${encodeURIComponent(id)}`, {
       method: 'DELETE',
+    }),
+  updateFollowing: (id, patch) =>
+    request<void>(`/me/following/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      json: {
+        ...(patch.watchStatus === undefined
+          ? {}
+          : { watch_status: patch.watchStatus }),
+        ...(patch.favorite === undefined ? {} : { favorite: patch.favorite }),
+        ...(patch.notificationsEnabled === undefined
+          ? {}
+          : { notifications_enabled: patch.notificationsEnabled }),
+      },
     }),
   calendar: async (from, to) => {
     const response = await request<BackendCalendarResponse>(
@@ -480,6 +567,20 @@ export const httpApi: WatchlyApi = {
     request<void>(`/me/episodes/${encodeURIComponent(id)}/watched`, {
       method: watched ? 'PUT' : 'DELETE',
     }),
+  setSeriesWatched: async (id, watched) => {
+    const result = await request<{
+      updated: number;
+      eligible: number;
+      skipped_future: number;
+    }>(`/me/series/${encodeURIComponent(id)}/watched`, {
+      method: watched ? 'PUT' : 'DELETE',
+    });
+    return {
+      updated: result.updated,
+      eligible: result.eligible,
+      skippedFuture: result.skipped_future,
+    };
+  },
   sync: async (seriesId) =>
     mapSync(
       seriesId
@@ -493,9 +594,40 @@ export const httpApi: WatchlyApi = {
     mapSettings(await request<BackendUserSettings>('/me/settings')),
   patchSettings: async (patch) => {
     const json = {
+      ...(patch.displayName === undefined ? {} : { display_name: patch.displayName }),
+      ...(patch.timezone === undefined ? {} : { timezone: patch.timezone }),
+      ...(patch.locale === undefined ? {} : { locale: patch.locale }),
       ...(patch.notificationsEnabled === undefined
         ? {}
         : { notifications_enabled: patch.notificationsEnabled }),
+      ...(patch.notificationLocalTime === undefined
+        ? {}
+        : { notification_local_time: patch.notificationLocalTime }),
+      ...(patch.notificationQuietStart === undefined
+        ? {}
+        : { notification_quiet_start: patch.notificationQuietStart }),
+      ...(patch.notificationQuietEnd === undefined
+        ? {}
+        : { notification_quiet_end: patch.notificationQuietEnd }),
+      ...(patch.notificationLeadDays === undefined
+        ? {}
+        : { notification_lead_days: patch.notificationLeadDays }),
+      ...(patch.notifyReleases === undefined
+        ? {}
+        : { notify_releases: patch.notifyReleases }),
+      ...(patch.notifyScheduleChanges === undefined
+        ? {}
+        : { notify_schedule_changes: patch.notifyScheduleChanges }),
+      ...(patch.notifyNewSeasons === undefined
+        ? {}
+        : { notify_new_seasons: patch.notifyNewSeasons }),
+      ...(patch.notifyNews === undefined ? {} : { notify_news: patch.notifyNews }),
+      ...(patch.weeklyDigest === undefined
+        ? {}
+        : { weekly_digest: patch.weeklyDigest }),
+      ...(patch.preferredServices === undefined
+        ? {}
+        : { preferred_services: patch.preferredServices }),
     };
     return mapSettings(
       await request<BackendUserSettings>('/me/settings', {
@@ -504,8 +636,16 @@ export const httpApi: WatchlyApi = {
       }),
     );
   },
-  news: async () => {
-    const response = await request<BackendNewsPage>('/news');
+  news: async (filters: NewsFilters = {}) => {
+    const response = await request<BackendNewsPage>(
+      `/news${qs({
+        followed: filters.followed ? 'true' : undefined,
+        saved: filters.saved ? 'true' : undefined,
+        unread: filters.unread ? 'true' : undefined,
+        category: filters.category ?? undefined,
+        q: filters.q,
+      })}`,
+    );
     return {
       configured: response.configured,
       items: response.items.map((item) => ({
@@ -516,6 +656,9 @@ export const httpApi: WatchlyApi = {
         publishedAt: item.published_at,
         imageUrl: item.image_url,
         url: item.url,
+        category: item.category,
+        saved: item.saved,
+        readAt: item.read_at,
         relatedSeries: item.series.map((series) => ({
           id: series.id,
           title: series.title,
@@ -524,6 +667,11 @@ export const httpApi: WatchlyApi = {
       })),
     } satisfies NewsPage;
   },
+  updateNews: (id, patch) =>
+    request<void>(`/me/news/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      json: patch,
+    }),
   registerPush: (sub) =>
     request<{ id: string }>('/me/push-subscriptions', {
       method: 'POST',

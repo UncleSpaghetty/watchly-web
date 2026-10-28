@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 
-import { Card } from "@/components/ui/controls";
+import { Card, SelectField, TextField } from "@/components/ui/controls";
 import {
   Button,
   ErrorState,
@@ -52,6 +52,7 @@ export default function SettingsPage() {
   const me = useQuery({ queryKey: ["me"], queryFn: () => api.me() });
   const sync = useSyncMutation();
   const [pushError, setPushError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [supported, needsInstall, initialPermission] = useSyncExternalStore(
     () => () => undefined,
     () => capsSnapshot(),
@@ -137,6 +138,39 @@ export default function SettingsPage() {
     },
   });
 
+  const updateSettings = useMutation({
+    mutationFn: api.patchSettings,
+    onSuccess: (data) => {
+      qc.setQueryData(["settings"], data);
+      void qc.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+
+  const deleteAccount = useMutation({
+    mutationFn: async () => {
+      setDeleteError(null);
+      if (
+        !window.confirm(
+          "Eliminare definitivamente l’account, la watchlist e tutti i progressi? L’operazione non è reversibile.",
+        )
+      ) {
+        throw new Error("Operazione annullata.");
+      }
+      await api.deleteAccount();
+      disableGoogleAutoSelect();
+      await clearBrowserCaches();
+      localStorage.removeItem(PUSH_ID_KEY);
+    },
+    onSuccess: () => {
+      qc.clear();
+      router.replace("/login");
+    },
+    onError: (error) => {
+      if (error instanceof Error && error.message !== "Operazione annullata.")
+        setDeleteError(error.message);
+    },
+  });
+
   if (settings.isPending) return <ListSkeleton rows={3} />;
   if (settings.isError) {
     return (
@@ -160,8 +194,7 @@ export default function SettingsPage() {
       <Card>
         <h2 className="text-[16px] font-bold">Notifiche</h2>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Una notifica alle 12:00 (Europe/Rome) nei giorni con episodi in
-          uscita, solo per le serie seguite e in base alle date dei provider.
+          Scegli quando ricevere gli avvisi. Le preferenze per singola serie hanno priorità.
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-3 text-sm">
@@ -220,6 +253,127 @@ export default function SettingsPage() {
             Modalità demo: nessuna sottoscrizione push reale.
           </p>
         ) : null}
+
+        <div className="mt-5 grid gap-3 border-t border-border pt-5 sm:grid-cols-3">
+          <label className="text-sm font-semibold">
+            Orario
+            <TextField
+              type="time"
+              value={s.notificationLocalTime}
+              disabled={updateSettings.isPending}
+              onChange={(event) =>
+                updateSettings.mutate({ notificationLocalTime: event.target.value })
+              }
+              className="mt-2"
+            />
+          </label>
+          <label className="text-sm font-semibold">
+            Preavviso
+            <SelectField
+              value={s.notificationLeadDays}
+              disabled={updateSettings.isPending}
+              onChange={(event) =>
+                updateSettings.mutate({
+                  notificationLeadDays: Number(event.target.value) as 0 | 1 | 3 | 7,
+                })
+              }
+              className="mt-2 w-full"
+            >
+              <option value="0">Giorno stesso</option>
+              <option value="1">1 giorno prima</option>
+              <option value="3">3 giorni prima</option>
+              <option value="7">7 giorni prima</option>
+            </SelectField>
+          </label>
+          <label className="text-sm font-semibold">
+            Fuso orario
+            <TextField
+              value={s.timezone}
+              disabled={updateSettings.isPending}
+              onBlur={(event) => updateSettings.mutate({ timezone: event.target.value })}
+              onChange={() => undefined}
+              readOnly
+              className="mt-2"
+            />
+          </label>
+          <label className="text-sm font-semibold">
+            Ore silenziose da
+            <TextField
+              type="time"
+              value={s.notificationQuietStart ?? ""}
+              disabled={updateSettings.isPending}
+              onChange={(event) =>
+                updateSettings.mutate({ notificationQuietStart: event.target.value || null })
+              }
+              className="mt-2"
+            />
+          </label>
+          <label className="text-sm font-semibold">
+            Ore silenziose fino a
+            <TextField
+              type="time"
+              value={s.notificationQuietEnd ?? ""}
+              disabled={updateSettings.isPending}
+              onChange={(event) =>
+                updateSettings.mutate({ notificationQuietEnd: event.target.value || null })
+              }
+              className="mt-2"
+            />
+          </label>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {([
+            ["notifyReleases", "Uscite episodi"],
+            ["notifyScheduleChanges", "Cambi di programmazione"],
+            ["notifyNewSeasons", "Nuove stagioni"],
+            ["notifyNews", "News sui titoli seguiti"],
+            ["weeklyDigest", "Riepilogo settimanale"],
+          ] as const).map(([field, label]) => (
+            <label key={field} className="flex items-center gap-3 text-sm">
+              <input
+                type="checkbox"
+                checked={s[field]}
+                disabled={updateSettings.isPending}
+                onChange={(event) => updateSettings.mutate({ [field]: event.target.checked })}
+                className="h-5 w-5 accent-primary"
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+        {updateSettings.isError ? (
+          <div className="mt-3"><ErrorState error={updateSettings.error} /></div>
+        ) : null}
+      </Card>
+
+      <Card>
+        <h2 className="text-[16px] font-bold">Servizi preferiti</h2>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          I servizi selezionati compaiono per primi nella sezione “Dove guardare”.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          {["Netflix", "Crunchyroll", "Amazon Prime Video", "Disney Plus", "Apple TV Plus"].map((service) => {
+            const selected = s.preferredServices.includes(service);
+            return (
+              <label key={service} className="flex items-center gap-2 rounded-full border border-border px-3 py-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={selected}
+                  disabled={updateSettings.isPending}
+                  onChange={() =>
+                    updateSettings.mutate({
+                      preferredServices: selected
+                        ? s.preferredServices.filter((item) => item !== service)
+                        : [...s.preferredServices, service],
+                    })
+                  }
+                  className="accent-primary"
+                />
+                {service}
+              </label>
+            );
+          })}
+        </div>
       </Card>
 
       <Card>
@@ -256,10 +410,49 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <h2 className="text-[16px] font-bold">Fuso orario e lingua</h2>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          Italiano · Europe/Rome (fuso del calendario).
-        </p>
+        <h2 className="text-[16px] font-bold">Profilo, fuso orario e lingua</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <label className="text-sm font-semibold">
+            Nome visualizzato
+            <TextField
+              key={s.displayName ?? ""}
+              defaultValue={s.displayName ?? ""}
+              maxLength={100}
+              disabled={updateSettings.isPending}
+              onBlur={(event) =>
+                updateSettings.mutate({ displayName: event.target.value.trim() || null })
+              }
+              className="mt-2"
+            />
+          </label>
+          <label className="text-sm font-semibold">
+            Lingua
+            <SelectField
+              value={s.locale}
+              disabled={updateSettings.isPending}
+              onChange={(event) => updateSettings.mutate({ locale: event.target.value })}
+              className="mt-2 w-full"
+            >
+              <option value="it-IT">Italiano</option>
+              <option value="en-US">English</option>
+            </SelectField>
+          </label>
+          <label className="text-sm font-semibold">
+            Fuso orario
+            <SelectField
+              value={s.timezone}
+              disabled={updateSettings.isPending}
+              onChange={(event) => updateSettings.mutate({ timezone: event.target.value })}
+              className="mt-2 w-full"
+            >
+              <option value="Europe/Rome">Europe/Rome</option>
+              <option value="Europe/London">Europe/London</option>
+              <option value="America/New_York">America/New_York</option>
+              <option value="Asia/Tokyo">Asia/Tokyo</option>
+              <option value="UTC">UTC</option>
+            </SelectField>
+          </label>
+        </div>
       </Card>
 
       <Card>
@@ -283,6 +476,13 @@ export default function SettingsPage() {
           >
             Esci
           </Button>
+          <Button
+            variant="danger"
+            disabled={deleteAccount.isPending}
+            onClick={() => deleteAccount.mutate()}
+          >
+            {deleteAccount.isPending ? "Eliminazione…" : "Elimina account"}
+          </Button>
         </div>
         {logout.isError ? (
           <p role="alert" className="mt-3 text-sm text-accent">
@@ -296,6 +496,7 @@ export default function SettingsPage() {
             Cache locale svuotata.
           </p>
         ) : null}
+        {deleteError ? <p role="alert" className="mt-3 text-sm text-accent">{deleteError}</p> : null}
       </Card>
 
       <Card>

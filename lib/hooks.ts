@@ -12,6 +12,9 @@ import {
   type EpisodeDto,
   type SeriesDetail,
   type SeriesSummary,
+  type FollowingItem,
+  type WatchStatus,
+  type NewsPage,
 } from '@/lib/api';
 
 type Snapshot = Array<[QueryKey, unknown]>;
@@ -95,6 +98,102 @@ export function useWatchedMutation() {
       void qc.invalidateQueries({ queryKey: ['episodes'] });
       void qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
+  });
+}
+
+export function useFollowingUpdateMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      seriesId,
+      patch,
+    }: {
+      seriesId: string;
+      patch: {
+        watchStatus?: WatchStatus;
+        favorite?: boolean;
+        notificationsEnabled?: boolean | null;
+      };
+    }) => api.updateFollowing(seriesId, patch),
+    onMutate: async ({ seriesId, patch }) => {
+      await qc.cancelQueries({ queryKey: ['following'] });
+      const previous = qc.getQueryData<FollowingItem[]>(['following']);
+      qc.setQueryData<FollowingItem[]>(['following'], (old) =>
+        old?.map((item) =>
+          item.id === seriesId
+            ? {
+                ...item,
+                watchStatus: patch.watchStatus ?? item.watchStatus,
+                favorite: patch.favorite ?? item.favorite,
+                notificationsEnabled:
+                  patch.notificationsEnabled === undefined
+                    ? item.notificationsEnabled
+                    : patch.notificationsEnabled,
+              }
+            : item,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) qc.setQueryData(['following'], context.previous);
+    },
+    onSettled: () => void qc.invalidateQueries({ queryKey: ['following'] }),
+  });
+}
+
+export function useSeriesWatchedMutation(seriesId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (watched: boolean) => api.setSeriesWatched(seriesId, watched),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ['episodes', seriesId] });
+      void qc.invalidateQueries({ queryKey: ['calendar'] });
+      void qc.invalidateQueries({ queryKey: ['following'] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export function useNewsStateMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      newsId,
+      patch,
+    }: {
+      newsId: string;
+      patch: { saved?: boolean; read?: boolean };
+    }) => api.updateNews(newsId, patch),
+    onMutate: async ({ newsId, patch }) => {
+      await qc.cancelQueries({ queryKey: ['news'] });
+      const snapshots = qc.getQueriesData<NewsPage>({ queryKey: ['news'] });
+      qc.setQueriesData<NewsPage>({ queryKey: ['news'] }, (old) =>
+        old
+          ? {
+              ...old,
+              items: old.items.map((item) =>
+                item.id === newsId
+                  ? {
+                      ...item,
+                      saved: patch.saved ?? item.saved,
+                      readAt:
+                        patch.read === undefined
+                          ? item.readAt
+                          : patch.read
+                            ? new Date().toISOString()
+                            : null,
+                    }
+                  : item,
+              ),
+            }
+          : old,
+      );
+      return { snapshots };
+    },
+    onError: (_error, _variables, context) =>
+      context?.snapshots.forEach(([key, value]) => qc.setQueryData(key, value)),
+    onSettled: () => void qc.invalidateQueries({ queryKey: ['news'] }),
   });
 }
 

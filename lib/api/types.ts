@@ -3,6 +3,22 @@
 
 export type SeriesKind = 'anime' | 'tv';
 export type CatalogSource = 'kitsu' | 'anilist' | 'tmdb';
+export type WatchStatus =
+  | 'in_list'
+  | 'planned'
+  | 'watching'
+  | 'paused'
+  | 'completed'
+  | 'dropped';
+
+export interface WatchProvider {
+  id: string;
+  name: string;
+  url: string;
+  type: 'stream' | 'flatrate' | 'free' | 'ads' | 'buy' | 'rent';
+  source: CatalogSource;
+  logoUrl: string | null;
+}
 
 export const sourceLabels: Record<CatalogSource, string> = {
   kitsu: 'Kitsu',
@@ -24,6 +40,7 @@ export interface SeriesSummary {
   genres: string[];
   averageRating: number | null;
   episodeRuntimeMinutes: number | null;
+  watchProviders: WatchProvider[];
   following: boolean;
 }
 
@@ -42,6 +59,7 @@ export interface EpisodeDto {
   durationMinutes: number | null;
   /** Data civile `YYYY-MM-DD` pubblicata dal provider */
   airDate: string | null;
+  airAt: string | null;
   source: CatalogSource;
   watchedAt: string | null;
 }
@@ -73,10 +91,32 @@ export interface CalendarResponse {
 
 export interface FollowingItem extends SeriesSummary {
   nextAirDate: string | null;
+  watchStatus: WatchStatus;
+  favorite: boolean;
+  airedEpisodes: number;
+  watchedEpisodes: number;
+  backlogEpisodes: number;
+  nextUnwatchedEpisodeId: string | null;
+  notificationsEnabled: boolean | null;
 }
 
 export interface UserSettings {
+  displayName: string | null;
+  timezone: string;
+  locale: string;
   notificationsEnabled: boolean;
+  notificationLocalTime: string;
+  notificationQuietStart: string | null;
+  notificationQuietEnd: string | null;
+  notificationLeadDays: 0 | 1 | 3 | 7;
+  notifyReleases: boolean;
+  notifyScheduleChanges: boolean;
+  notifyNewSeasons: boolean;
+  notifyNews: boolean;
+  weeklyDigest: boolean;
+  preferredServices: string[];
+  pushAvailable: boolean;
+  pushSubscriptions: number;
   lastSyncAt: string | null;
   lastSyncStatus: 'ok' | 'partial' | 'failed' | null;
 }
@@ -89,6 +129,9 @@ export interface NewsItem {
   publishedAt: string | null;
   imageUrl: string | null;
   url: string;
+  category: 'series' | 'anime' | 'manga' | 'gaming' | 'events' | null;
+  saved: boolean;
+  readAt: string | null;
   /** Solo se l'associazione è certa */
   relatedSeries: Array<{ id: string; title: string; following: boolean }>;
 }
@@ -96,6 +139,24 @@ export interface NewsItem {
 export interface NewsPage {
   items: NewsItem[];
   configured: boolean;
+}
+
+export interface SearchFilters {
+  kind: SeriesKind | 'all';
+  source: CatalogSource | 'all';
+  year?: number;
+  format?: string;
+  genre?: string;
+  status?: string;
+  sort?: 'relevance' | 'rating' | 'year' | 'title';
+}
+
+export interface NewsFilters {
+  followed?: boolean;
+  saved?: boolean;
+  unread?: boolean;
+  category?: NewsItem['category'];
+  q?: string;
 }
 
 export interface SessionUser {
@@ -179,12 +240,12 @@ export interface WatchlyApi {
   login(email: string, password: string): Promise<SessionUser>;
   loginWithGoogle(credential: string): Promise<SessionUser>;
   logout(): Promise<void>;
+  deleteAccount(): Promise<void>;
   me(): Promise<SessionUser>;
   dashboard(weeks: DashboardPeriodWeeks): Promise<DashboardData>;
   search(
     q: string,
-    kind: SeriesKind | 'all',
-    source: CatalogSource | 'all',
+    filters: SearchFilters,
     signal?: AbortSignal,
   ): Promise<SeriesSummary[]>;
   getSeries(id: string): Promise<SeriesDetail>;
@@ -192,14 +253,32 @@ export interface WatchlyApi {
   following(): Promise<FollowingItem[]>;
   follow(seriesId: string): Promise<void>;
   unfollow(seriesId: string): Promise<void>;
+  updateFollowing(
+    seriesId: string,
+    patch: Partial<
+      Pick<FollowingItem, 'watchStatus' | 'favorite'> & {
+        notificationsEnabled: boolean | null;
+      }
+    >,
+  ): Promise<void>;
   calendar(from: string, to: string): Promise<CalendarResponse>;
   setWatched(episodeId: string, watched: boolean): Promise<void>;
+  setSeriesWatched(
+    seriesId: string,
+    watched: boolean,
+  ): Promise<{ updated: number; eligible: number; skippedFuture: number }>;
   sync(seriesId?: string): Promise<SyncResult>;
   getSettings(): Promise<UserSettings>;
   patchSettings(
-    patch: Partial<Pick<UserSettings, 'notificationsEnabled'>>,
+    patch: Partial<
+      Omit<UserSettings, 'lastSyncAt' | 'lastSyncStatus' | 'pushAvailable' | 'pushSubscriptions'>
+    >,
   ): Promise<UserSettings>;
-  news(): Promise<NewsPage>;
+  news(filters?: NewsFilters): Promise<NewsPage>;
+  updateNews(
+    newsId: string,
+    patch: { saved?: boolean; read?: boolean },
+  ): Promise<void>;
   registerPush(sub: PushSubscriptionPayload): Promise<{ id: string }>;
   unregisterPush(id: string): Promise<void>;
 }

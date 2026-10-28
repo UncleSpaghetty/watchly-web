@@ -147,6 +147,32 @@ function DashboardContent({
       <section className="dashboard-panel mt-5">
         <div className="dashboard-panel-heading">
           <div>
+            <p className="dashboard-panel-eyebrow">QUESTA SETTIMANA</p>
+            <h2>Il prossimo passo</h2>
+          </div>
+          <Link className="text-sm font-semibold text-primary hover:underline" href="/my-series">
+            Apri la watchlist
+          </Link>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Link href="/?view=week" className="rounded-[14px] border border-border bg-soft p-4">
+            <strong className="text-2xl text-primary">{kpis.upcoming7Days}</strong>
+            <span className="mt-1 block text-sm text-muted">episodi in arrivo</span>
+          </Link>
+          <Link href="/my-series" className="rounded-[14px] border border-border bg-soft p-4">
+            <strong className="text-2xl text-primary">{kpis.backlogEpisodes}</strong>
+            <span className="mt-1 block text-sm text-muted">episodi da recuperare</span>
+          </Link>
+          <Link href="/my-series" className="rounded-[14px] border border-border bg-soft p-4">
+            <strong className="text-2xl text-primary">{kpis.completionPercentage}%</strong>
+            <span className="mt-1 block text-sm text-muted">progresso sugli episodi usciti</span>
+          </Link>
+        </div>
+      </section>
+
+      <section className="dashboard-panel mt-5">
+        <div className="dashboard-panel-heading">
+          <div>
             <p className="dashboard-panel-eyebrow">PROGRESSO</p>
             <h2>Stato delle serie seguite</h2>
           </div>

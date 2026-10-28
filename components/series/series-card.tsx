@@ -35,7 +35,15 @@ export function FollowButton({
   );
 }
 
-export function SeriesCard({ series, footer }: { series: SeriesSummary; footer?: React.ReactNode }) {
+export function SeriesCard({
+  series,
+  footer,
+  actions,
+}: {
+  series: SeriesSummary;
+  footer?: React.ReactNode;
+  actions?: React.ReactNode;
+}) {
   return (
     <li className="motion-card group relative flex gap-3 rounded-[16px] border border-border bg-surface/95 p-2.5">
       <Link
@@ -53,7 +61,10 @@ export function SeriesCard({ series, footer }: { series: SeriesSummary; footer?:
         </p>
         {footer}
       </div>
-      <FollowButton seriesId={series.id} following={series.following} />
+      <div className="relative z-10 flex shrink-0 flex-col items-end gap-2">
+        <FollowButton seriesId={series.id} following={series.following} />
+        {actions}
+      </div>
     </li>
   );
 }
