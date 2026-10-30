@@ -3154,6 +3154,114 @@ a.episode-row-title:hover {
   border: 1px solid #35554c;
 }
 
+.ios-install-card {
+  background:
+    radial-gradient(
+      circle at 100% 0,
+      color-mix(in srgb, var(--color-primary) 17%, transparent),
+      transparent 38%
+    ),
+    color-mix(in srgb, var(--color-surface) 96%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 38%, var(--color-border));
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.ios-install-heading {
+  align-items: start;
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.ios-install-app-icon,
+.ios-install-step-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-soft));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+  color: var(--color-primary);
+  display: inline-flex;
+  justify-content: center;
+}
+
+.ios-install-app-icon {
+  border-radius: 12px;
+  height: 2.8rem;
+  width: 2.8rem;
+}
+
+.ios-install-heading h2 {
+  font-size: 1.15rem;
+  font-weight: 750;
+  margin-top: 0.2rem;
+}
+
+.ios-install-heading > div > p:last-child {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  margin-top: 0.35rem;
+  max-width: 48rem;
+}
+
+.ios-install-close {
+  align-items: center;
+  border-radius: 999px;
+  color: var(--color-muted);
+  display: inline-flex;
+  height: 2.25rem;
+  justify-content: center;
+  margin: -0.25rem -0.25rem 0 0;
+  transition: background 150ms ease, color 150ms ease;
+  width: 2.25rem;
+}
+
+.ios-install-close:hover {
+  background: var(--color-soft);
+  color: var(--color-foreground);
+}
+
+.ios-install-close:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.ios-install-steps {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+
+.ios-install-steps li {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-soft) 88%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-muted);
+  display: flex;
+  font-size: 0.74rem;
+  gap: 0.65rem;
+  line-height: 1.45;
+  min-height: 4rem;
+  padding: 0.65rem;
+}
+
+.ios-install-steps strong {
+  color: var(--color-foreground);
+}
+
+.ios-install-step-icon {
+  border-radius: 9px;
+  flex: 0 0 auto;
+  height: 2.2rem;
+  width: 2.2rem;
+}
+
+.ios-install-confirm {
+  margin-top: 0.8rem;
+}
+
 .home-section {
   background: color-mix(in srgb, var(--color-surface) 94%, transparent);
   border: 1px solid var(--color-border);
@@ -3339,6 +3447,22 @@ a.episode-row-title:hover {
 
   .home-series-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ios-install-app-icon {
+    display: none;
+  }
+
+  .ios-install-heading {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .ios-install-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .ios-install-confirm {
+    width: 100%;
   }
 }
 

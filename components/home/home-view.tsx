@@ -1,8 +1,9 @@
 'use client';
 
-import { CalendarDays, ChevronRight, Play } from 'lucide-react';
+import { CalendarDays, ChevronRight, Compass, Play } from 'lucide-react';
 import Link from 'next/link';
 
+import { IOSInstallCard } from '@/components/pwa/ios-install-card';
 import { Poster } from '@/components/series/poster';
 import { ErrorState, ListSkeleton } from '@/components/ui/feedback';
 import { Progress } from '@/components/ui/progress';
@@ -50,28 +51,51 @@ export function HomeView() {
   const continueWatching = following.data.filter(
     (series) => series.nextUnwatchedEpisodeId || series.watchedEpisodes > 0,
   );
+  const isFreshUser = !following.data.some((series) => series.following);
+  const firstName = me.data?.name?.split(' ')[0];
 
   return (
     <div className="home-page">
       <section className="home-hero">
-        <p className="home-kicker">LA TUA SERATA</p>
+        <p className="home-kicker">
+          {isFreshUser ? 'INIZIA DA QUI' : 'LA TUA SERATA'}
+        </p>
         <h1>
-          Bentornato{me.data?.name ? `, ${me.data.name.split(' ')[0]}` : ''}
+          {isFreshUser ? 'Benvenuto' : 'Bentornato'}
+          {firstName ? `, ${firstName}` : ''}
         </h1>
         <p>
-          {nextSeries?.nextAirDate
+          {isFreshUser
+            ? 'Cerca anime e serie TV, aggiungili ai tuoi seguiti e costruisci il tuo calendario personale.'
+            : nextSeries?.nextAirDate
             ? `${nextSeries.title} torna ${formatLongDate(nextSeries.nextAirDate)}.`
             : 'Consulta il calendario o riprendi una delle serie che stai seguendo.'}
         </p>
         <div className="home-hero-actions">
-          <Link href="/calendar" className="home-primary-action">
-            <CalendarDays size={17} aria-hidden /> Apri il calendario
+          <Link
+            href={isFreshUser ? '/search' : '/calendar'}
+            className="home-primary-action"
+          >
+            {isFreshUser ? (
+              <Compass size={17} aria-hidden />
+            ) : (
+              <CalendarDays size={17} aria-hidden />
+            )}
+            {isFreshUser ? 'Esplora il catalogo' : 'Apri il calendario'}
           </Link>
-          <Link href="/my-series" className="home-secondary-action">
-            I miei seguiti <ChevronRight size={16} aria-hidden />
+          <Link
+            href={isFreshUser ? '/calendar' : '/my-series'}
+            className="home-secondary-action"
+          >
+            {isFreshUser ? 'Scopri il calendario' : 'I miei seguiti'}{' '}
+            <ChevronRight size={16} aria-hidden />
           </Link>
         </div>
       </section>
+
+      {isFreshUser && me.data?.id ? (
+        <IOSInstallCard userId={me.data.id} />
+      ) : null}
 
       <section className="home-section" aria-labelledby="home-week-title">
         <div className="home-section-heading">
