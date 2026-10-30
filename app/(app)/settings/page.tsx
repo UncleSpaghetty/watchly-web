@@ -81,7 +81,6 @@ function SettingToggle({
         disabled={disabled}
         aria-label={label}
         onCheckedChange={onChange}
-        className="setting-toggle-switch"
       />
     </label>
   );
