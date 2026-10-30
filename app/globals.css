@@ -2195,20 +2195,6 @@ a.episode-row-title:hover {
   font-weight: 600;
 }
 
-.setting-toggle-switch {
-  height: 1.5rem !important;
-  width: 2.65rem !important;
-}
-
-.setting-toggle-switch [data-slot="switch-thumb"] {
-  height: 1.25rem;
-  width: 1.25rem;
-}
-
-.setting-toggle-switch[data-checked] [data-slot="switch-thumb"] {
-  transform: translateX(1.25rem);
-}
-
 .settings-platform-toggle {
   background: rgb(6 25 22 / 88%);
   border-color: #31564c;
