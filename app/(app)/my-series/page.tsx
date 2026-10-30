@@ -14,7 +14,7 @@ import { useMemo, useState } from "react";
 
 import { Poster } from "@/components/series/poster";
 import { Button } from "@/components/ui/button";
-import { Chip } from "@/components/ui/controls";
+import { ChoiceGroup } from "@/components/ui/controls";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -142,27 +142,30 @@ export default function MySeriesPage() {
           />
         </div>
 
-        <div className="following-status-filters">
-          {statusFilterOptions.map((item) => (
-            <Chip
-              key={item.value}
-              selected={status === item.value}
-              onClick={() => setStatus(item.value)}
-            >
-              <span>{item.label}</span>
-              <span
-                className="filter-count"
-                aria-label={`${statusCounts[item.value]} titoli`}
-              >
-                {statusCounts[item.value]}
-              </span>
-            </Chip>
-          ))}
-        </div>
+        <ChoiceGroup
+          ariaLabel="Filtra per stato"
+          className="following-status-filters"
+          value={status}
+          onChange={setStatus}
+          items={statusFilterOptions.map((item) => ({
+            value: item.value,
+            label: (
+              <>
+                <span>{item.label}</span>
+                <span
+                  className="filter-count"
+                  aria-label={`${statusCounts[item.value]} titoli`}
+                >
+                  {statusCounts[item.value]}
+                </span>
+              </>
+            ),
+          }))}
+        />
 
         <label className="following-sort-row">
           <ArrowUpDown size={16} aria-hidden />
-          <span>Ordina per</span>
+          <span>Ordinamento</span>
           <Select
             items={sortOptions}
             value={sort}

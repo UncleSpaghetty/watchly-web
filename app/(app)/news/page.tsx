@@ -16,7 +16,7 @@ import { useState } from "react";
 import { FollowButton } from "@/components/series/series-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Chip } from "@/components/ui/controls";
+import { ChoiceGroup } from "@/components/ui/controls";
 import {
   EmptyState,
   ErrorState,
@@ -28,6 +28,7 @@ import { formatDateTime } from "@/lib/date/italy";
 import { useNewsStateMutation } from "@/lib/hooks";
 
 type Feed = "all" | "saved";
+type CategoryFilter = NonNullable<NewsItem["category"]> | "all";
 
 const categoryItems: Array<{
   value: NewsItem["category"];
@@ -61,38 +62,40 @@ export default function NewsPage() {
       />
 
       <section className="filter-panel mb-6" aria-label="Filtri del feed">
-        <div className="news-feed-filters">
-          {(["all", "saved"] as const).map((value) => (
-            <Chip
-              key={value}
-              selected={feed === value}
-              onClick={() => setFeed(value)}
-            >
-              {value === "all"
-                ? "Tutti"
-                : "Salvati"}
-            </Chip>
-          ))}
-        </div>
-        <div className="news-category-filters" aria-label="Categoria notizie">
-          {categoryItems.map(({ Icon, ...item }) => (
-            <Chip
-              key={item.value ?? "all"}
-              selected={category === item.value}
-              onClick={() => setCategory(item.value)}
-            >
-              <Icon size={15} aria-hidden />
-              {item.value === null ? (
-                <>
-                  <span className="news-category-long">{item.label}</span>
-                  <span className="news-category-short">Tutte</span>
-                </>
-              ) : (
-                item.label
-              )}
-            </Chip>
-          ))}
-        </div>
+        <ChoiceGroup<Feed>
+          ariaLabel="Notizie da mostrare"
+          className="news-feed-filters"
+          value={feed}
+          onChange={setFeed}
+          items={[
+            { value: "all", label: "Tutti" },
+            { value: "saved", label: "Salvati" },
+          ]}
+        />
+        <ChoiceGroup<CategoryFilter>
+          ariaLabel="Categoria notizie"
+          className="news-category-filters"
+          value={category ?? "all"}
+          onChange={(value) =>
+            setCategory(value === "all" ? null : value)
+          }
+          items={categoryItems.map(({ Icon, ...item }) => ({
+            value: item.value ?? "all",
+            label: (
+              <>
+                <Icon size={15} aria-hidden />
+                {item.value === null ? (
+                  <>
+                    <span className="news-category-long">{item.label}</span>
+                    <span className="news-category-short">Tutte</span>
+                  </>
+                ) : (
+                  item.label
+                )}
+              </>
+            ),
+          }))}
+        />
       </section>
 
       {news.isPending ? (

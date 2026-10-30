@@ -2,17 +2,17 @@
 
 import { useQuery } from "@tanstack/react-query";
 import {
+  ArrowUpDown,
   Clapperboard,
   Film,
   Grid2X2,
-  ListFilter,
   Tv,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 import { SeriesCard } from "@/components/series/series-card";
-import { Chip } from "@/components/ui/controls";
+import { ChoiceGroup } from "@/components/ui/controls";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -149,32 +149,35 @@ function SearchContent({
           />
         </div>
 
-        <div className="explore-kind-filters">
-          {(["all", "anime", "tv", "film"] as const).map((value) => (
-            <Chip
-              key={value}
-              selected={kind === value}
-              onClick={() => setKind(value)}
-            >
-              {value === "all" ? (
-                <Grid2X2 size={14} aria-hidden />
-              ) : value === "anime" ? (
-                <Clapperboard size={15} aria-hidden />
-              ) : value === "tv" ? (
-                <Tv size={15} aria-hidden />
-              ) : (
-                <Film size={15} aria-hidden />
-              )}
-              {value === "all"
-                ? "Tutti"
-                : value === "anime"
-                  ? "Anime"
-                  : value === "tv"
-                    ? "Serie TV"
-                    : "Film"}
-            </Chip>
-          ))}
-        </div>
+        <ChoiceGroup
+          ariaLabel="Tipo di contenuto"
+          className="explore-kind-filters"
+          value={kind}
+          onChange={setKind}
+          items={(["all", "anime", "tv", "film"] as const).map((value) => ({
+            value,
+            label: (
+              <>
+                {value === "all" ? (
+                  <Grid2X2 size={14} aria-hidden />
+                ) : value === "anime" ? (
+                  <Clapperboard size={15} aria-hidden />
+                ) : value === "tv" ? (
+                  <Tv size={15} aria-hidden />
+                ) : (
+                  <Film size={15} aria-hidden />
+                )}
+                {value === "all"
+                  ? "Tutti"
+                  : value === "anime"
+                    ? "Anime"
+                    : value === "tv"
+                      ? "Serie TV"
+                      : "Film"}
+              </>
+            ),
+          }))}
+        />
 
         <div className="search-primary-filters">
           <Select
@@ -225,14 +228,16 @@ function SearchContent({
             </SelectContent>
           </Select>
           <label className="explore-sort-control">
-            <span>Ordina per</span>
-            <ListFilter size={19} aria-hidden />
+            <span>
+              <ArrowUpDown size={16} aria-hidden />
+              Ordinamento
+            </span>
             <Select
               items={sortItems}
               value={sort}
               onValueChange={(value) => setSort(value as typeof sort)}
             >
-              <SelectTrigger aria-label="Ordina risultati">
+              <SelectTrigger aria-label="Ordina risultati" className="sort-select-trigger">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

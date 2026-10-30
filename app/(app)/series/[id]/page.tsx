@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { CirclePlay, RefreshCw } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -146,21 +147,29 @@ export default function SeriesPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             <FollowButton seriesId={s.id} following={s.following} showLabel />
             <Button
-              variant="ghost"
+              variant="outline"
               disabled={sync.isPending}
               onClick={() => sync.mutate()}
+              aria-label="Aggiorna le informazioni della serie"
             >
+              <RefreshCw
+                size={16}
+                aria-hidden
+                className={sync.isPending ? 'animate-spin' : ''}
+              />
               {sync.isPending ? 'Aggiornamento…' : 'Aggiorna informazioni'}
             </Button>
             {nextUnwatched ? (
               <Button
-                variant="ghost"
+                variant="secondary"
+                aria-label="Vai al prossimo episodio non visto"
                 onClick={() =>
                   document
                     .getElementById(`episode-${nextUnwatched.id}`)
                     ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
                 }
               >
+                <CirclePlay size={17} aria-hidden />
                 Prossimo non visto
               </Button>
             ) : null}
@@ -277,10 +286,9 @@ export default function SeriesPage() {
           hint="Puoi comunque seguire la serie: gli episodi appariranno appena disponibili."
         />
       ) : (
-        <ul className="space-y-2.5">
+        <ul className="episode-list episode-list-detail">
           {episodes.data.map((e, index) => {
             const episodeDate = e.airDate;
-            const isPast = episodeDate ? episodeDate < today : false;
             const isFuture = e.airAt
               ? new Date(e.airAt).getTime() > nowMs
               : !!episodeDate && episodeDate > today;
@@ -289,37 +297,36 @@ export default function SeriesPage() {
                 key={e.id}
                 id={`episode-${e.id}`}
                 style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
-                className={`episode-row list-reveal ${isPast ? 'episode-row-past' : 'episode-row-upcoming'}`}
+                className="episode-row episode-row-detail list-reveal"
               >
-                <div className="flex h-11 min-w-11 shrink-0 items-center justify-center rounded-xl bg-soft px-2 text-sm font-bold text-primary">
-                  {e.seasonNumber ? `S${e.seasonNumber}` : 'EP'}
-                  <span className="mx-0.5 text-muted">·</span>
-                  {e.number ?? '?'}
+                <div className="episode-row-marker episode-number-marker">
+                  <strong>{e.number ?? '?'}</strong>
+                  <span>{e.seasonNumber ? `S${e.seasonNumber}` : 'EP'}</span>
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="episode-row-content">
                   <p
-                    className={`font-semibold ${e.watchedAt ? 'text-muted line-through' : ''}`}
+                    className={`episode-row-title episode-row-title-multiline ${e.watchedAt ? 'episode-row-title-watched' : ''}`}
+                    title={e.title ?? undefined}
                   >
                     {e.title ??
                       (e.number ? `Episodio ${e.number}` : 'Episodio')}
                   </p>
-                  <p className="mt-1 text-xs text-muted">
-                    Data di uscita:{' '}
-                    {e.airDate ? formatLongDate(e.airDate) : 'non disponibile'}
+                  <p className="episode-row-subtitle">
+                    {e.airDate ? formatLongDate(e.airDate) : 'Data non disponibile'}
                     {e.durationMinutes ? ` · ${e.durationMinutes} min` : ''}
                   </p>
-                  <p className="mt-2 text-xs font-medium text-muted">
-                    Fonte: {sourceLabels[e.source]}
-                  </p>
+                  <p className="episode-row-meta">{sourceLabels[e.source]}</p>
                 </div>
-                <WatchStatusButton
-                  watched={!!e.watchedAt}
-                  disabled={watched.isPending || isFuture}
-                  disabledLabel={isFuture ? 'Non ancora uscito' : undefined}
-                  onToggle={() =>
-                    watched.mutate({ episodeId: e.id, watched: !e.watchedAt })
-                  }
-                />
+                <div className="episode-row-state">
+                  <WatchStatusButton
+                    watched={!!e.watchedAt}
+                    disabled={watched.isPending || isFuture}
+                    disabledLabel={isFuture ? 'Non uscito' : undefined}
+                    onToggle={() =>
+                      watched.mutate({ episodeId: e.id, watched: !e.watchedAt })
+                    }
+                  />
+                </div>
               </li>
             );
           })}

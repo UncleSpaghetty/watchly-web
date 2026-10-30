@@ -3,10 +3,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
+  Check,
   Globe2,
   Layers3,
+  LogOut,
+  Plus,
   RefreshCw,
   ShieldCheck,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
@@ -58,13 +62,19 @@ function SettingToggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex min-h-11 items-center justify-between gap-3 rounded-[14px] border border-border bg-surface/70 px-3 py-2 text-sm font-semibold">
-      <span>{label}</span>
+    <label className="setting-toggle-control">
+      <span className="setting-toggle-label">
+        <span>{label}</span>
+        <span className="setting-toggle-state">
+          {checked ? "Attive" : "Disattive"}
+        </span>
+      </span>
       <Switch
         checked={checked}
         disabled={disabled}
         aria-label={label}
         onCheckedChange={onChange}
+        className="setting-toggle-switch"
       />
     </label>
   );
@@ -427,8 +437,11 @@ export default function SettingsPage() {
             return (
               <Toggle
                 key={service}
+                variant="outline"
+                className="settings-platform-toggle"
                 pressed={selected}
                 disabled={updateSettings.isPending}
+                aria-label={`${selected ? "Rimuovi" : "Aggiungi"} ${service} dalle piattaforme preferite`}
                 onPressedChange={() =>
                   updateSettings.mutate({
                     preferredServices: selected
@@ -437,6 +450,11 @@ export default function SettingsPage() {
                   })
                 }
               >
+                {selected ? (
+                  <Check size={16} strokeWidth={2.5} aria-hidden />
+                ) : (
+                  <Plus size={16} aria-hidden />
+                )}
                 {service}
               </Toggle>
             );
@@ -551,18 +569,24 @@ export default function SettingsPage() {
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button
-            variant="ghost"
+            variant="outline"
             disabled={resetCache.isPending}
             onClick={() => resetCache.mutate()}
           >
+            <RefreshCw
+              size={16}
+              aria-hidden
+              className={resetCache.isPending ? "animate-spin" : ""}
+            />
             Svuota cache locale
           </Button>
           <Button
             className="g_id_signout"
-            variant="destructive"
+            variant="outline"
             disabled={logout.isPending}
             onClick={() => logout.mutate()}
           >
+            <LogOut size={16} aria-hidden />
             Esci
           </Button>
           <Button
@@ -570,6 +594,7 @@ export default function SettingsPage() {
             disabled={deleteAccount.isPending}
             onClick={() => deleteAccount.mutate()}
           >
+            <Trash2 size={16} aria-hidden />
             {deleteAccount.isPending ? "Eliminazione…" : "Elimina account"}
           </Button>
         </div>
