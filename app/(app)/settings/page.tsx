@@ -17,6 +17,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,11 +40,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Toggle } from "@/components/ui/toggle";
-import {
-  ErrorState,
-  ListSkeleton,
-  PageHeader,
-} from "@/components/ui/feedback";
+import { ErrorState, ListSkeleton, PageHeader } from "@/components/ui/feedback";
 import { api, isMockApi } from "@/lib/api";
 import { disableGoogleAutoSelect } from "@/lib/auth/google";
 import { formatDateTime } from "@/lib/date/italy";
@@ -201,13 +208,6 @@ export default function SettingsPage() {
   const deleteAccount = useMutation({
     mutationFn: async () => {
       setDeleteError(null);
-      if (
-        !window.confirm(
-          "Eliminare definitivamente l’account, la watchlist e tutti i progressi? L’operazione non è reversibile.",
-        )
-      ) {
-        throw new Error("Operazione annullata.");
-      }
       await api.deleteAccount();
       disableGoogleAutoSelect();
       await clearBrowserCaches();
@@ -218,8 +218,11 @@ export default function SettingsPage() {
       router.replace("/login");
     },
     onError: (error) => {
-      if (error instanceof Error && error.message !== "Operazione annullata.")
-        setDeleteError(error.message);
+      setDeleteError(
+        error instanceof Error
+          ? error.message
+          : "Eliminazione dell’account non riuscita.",
+      );
     },
   });
 
@@ -551,7 +554,9 @@ export default function SettingsPage() {
               <SelectContent>
                 <SelectItem value="Europe/Rome">Europe/Rome</SelectItem>
                 <SelectItem value="Europe/London">Europe/London</SelectItem>
-                <SelectItem value="America/New_York">America/New_York</SelectItem>
+                <SelectItem value="America/New_York">
+                  America/New_York
+                </SelectItem>
                 <SelectItem value="Asia/Tokyo">Asia/Tokyo</SelectItem>
                 <SelectItem value="UTC">UTC</SelectItem>
               </SelectContent>
@@ -589,14 +594,39 @@ export default function SettingsPage() {
             <LogOut size={16} aria-hidden />
             Esci
           </Button>
-          <Button
-            variant="destructive"
-            disabled={deleteAccount.isPending}
-            onClick={() => deleteAccount.mutate()}
-          >
-            <Trash2 size={16} aria-hidden />
-            {deleteAccount.isPending ? "Eliminazione…" : "Elimina account"}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger
+              render={
+                <Button
+                  variant="destructive"
+                  disabled={deleteAccount.isPending}
+                />
+              }
+            >
+              <Trash2 size={16} aria-hidden />
+              {deleteAccount.isPending ? "Eliminazione…" : "Elimina account"}
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <div className="mb-4 flex size-11 items-center justify-center rounded-[14px] border border-destructive/30 bg-destructive/10 text-destructive">
+                <Trash2 size={20} aria-hidden />
+              </div>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Eliminare l’account?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Verranno eliminati definitivamente il tuo account, la
+                  watchlist e tutti i progressi. Questa operazione non può
+                  essere annullata.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                <AlertDialogAction onClick={() => deleteAccount.mutate()}>
+                  <Trash2 size={16} aria-hidden />
+                  Elimina definitivamente
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
         {logout.isError ? (
           <p role="alert" className="mt-3 text-sm text-accent">
