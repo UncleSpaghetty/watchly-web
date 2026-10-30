@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateTime } from "@/lib/date/italy";
-
-import { Card } from "./controls";
 
 export function PageHeader({
   title,
@@ -32,15 +33,6 @@ export function PageHeader({
       </div>
       {actions}
     </header>
-  );
-}
-
-export function Skeleton({ className = "" }: { className?: string }) {
-  return (
-    <div
-      aria-hidden
-      className={`animate-pulse rounded-[16px] bg-soft ${className}`}
-    />
   );
 }
 
@@ -78,13 +70,13 @@ export function ErrorState({
     <Card role="alert" className="border-accent/50 bg-accent/10 p-4">
       <p className="text-sm leading-6">{message}</p>
       {onRetry ? (
-        <button
-          type="button"
+        <Button
+          variant="link"
           onClick={onRetry}
-          className="mt-2 text-sm font-semibold text-primary underline"
+          className="mt-2"
         >
           Riprova
-        </button>
+        </Button>
       ) : null}
     </Card>
   );
@@ -100,27 +92,5 @@ export function StaleBanner({ lastSyncAt }: { lastSyncAt: string | null }) {
       non essere aggiornati
       {lastSyncAt ? ` (ultimo riuscito: ${formatDateTime(lastSyncAt)})` : ""}.
     </div>
-  );
-}
-
-export function Button({
-  variant = "primary",
-  className = "",
-  ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "ghost" | "danger";
-}) {
-  const styles = {
-    primary: "border-primary bg-primary text-[#061511] hover:opacity-90",
-    ghost: "border-border bg-transparent text-foreground hover:bg-soft",
-    danger: "border-accent/70 bg-transparent text-accent hover:bg-accent/10",
-  }[variant];
-
-  return (
-    <button
-      type="button"
-      {...props}
-      className={`inline-flex min-h-11 items-center justify-center rounded-[14px] border px-4 py-2.5 text-sm font-semibold transition-[transform,background-color,border-color,opacity] duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 ${styles} ${className}`}
-    />
   );
 }

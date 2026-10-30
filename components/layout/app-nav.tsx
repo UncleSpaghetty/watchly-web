@@ -16,8 +16,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const desktopItems = [
-  { href: "/home", label: "Home", Icon: Home },
-  { href: "/", label: "Calendario", Icon: CalendarDays },
+  { href: "/", label: "Home", Icon: Home },
+  { href: "/calendar", label: "Calendario", Icon: CalendarDays },
   { href: "/search", label: "Esplora", Icon: Compass },
   { href: "/my-series", label: "I miei seguiti", Icon: Heart },
   { href: "/news", label: "Notizie", Icon: Newspaper },
@@ -26,8 +26,8 @@ const desktopItems = [
 ] as const;
 
 const mobileItems = [
-  { href: "/home", label: "Home", Icon: LayoutDashboard },
-  { href: "/", label: "Calendario", Icon: CalendarDays },
+  { href: "/", label: "Home", Icon: LayoutDashboard },
+  { href: "/calendar", label: "Calendario", Icon: CalendarDays },
   { href: "/search", label: "Esplora", Icon: Search },
   { href: "/my-series", label: "Seguiti", Icon: Heart },
   { href: "/dashboard", label: "Statistiche", Icon: BarChart3 },
@@ -42,8 +42,8 @@ export function AppNav() {
     <aside className="app-nav pb-safe fixed inset-x-0 bottom-0 z-20 flex border-t border-border md:sticky md:top-0 md:h-dvh md:w-[218px] md:shrink-0 md:flex-col md:border-r md:border-t-0 md:p-5">
       <Link
         className="app-nav-brand hidden md:flex"
-        href="/home"
-        aria-label="Watchly, calendario"
+        href="/"
+        aria-label="Watchly, home"
       >
         <span className="app-nav-logo" aria-hidden="true">
           <Image

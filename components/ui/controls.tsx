@@ -1,54 +1,100 @@
 "use client";
 
 import type React from "react";
+import { Check } from "lucide-react";
 
-function cx(...values: Array<string | false | null | undefined>) {
-  return values.filter(Boolean).join(" ");
-}
-
-const baseField =
-  "ui-field w-full rounded-[14px] border border-border bg-surface px-4 py-3.5 text-[15px] placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
-
-export function TextField(
-  props: React.InputHTMLAttributes<HTMLInputElement> & { className?: string },
-) {
-  const { className, ...rest } = props;
-  return <input {...rest} className={cx(baseField, className)} />;
-}
-
-export function SelectField(
-  props: React.SelectHTMLAttributes<HTMLSelectElement> & { className?: string },
-) {
-  const { className, ...rest } = props;
-  return (
-    <select
-      {...rest}
-      className={cx(
-        "ui-field min-h-11 rounded-[14px] border border-border bg-surface px-4 py-3 text-[15px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-        className,
-      )}
-    />
-  );
-}
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Toggle } from "@/components/ui/toggle";
+import { cn } from "cn";
 
 export function Chip({
   selected,
   className,
+  children,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { selected?: boolean }) {
+}: Omit<React.ComponentProps<typeof Toggle>, "pressed"> & {
+  selected?: boolean;
+}) {
   return (
-    <button
-      type="button"
-      aria-pressed={selected}
+    <Toggle
+      pressed={selected}
+      variant="outline"
       {...props}
-      className={cx(
-        "ui-chip min-h-11 rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-[transform,background-color,border-color,color] hover:-translate-y-0.5 active:translate-y-0",
-        selected
-          ? "border-primary bg-primary text-[#061511]"
-          : "border-border text-muted hover:bg-soft hover:text-foreground",
+      className={cn(
+        "ui-chip ui-filter-toggle cursor-pointer rounded-full border-border px-3.5 text-[13px] text-muted aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground",
         className,
       )}
-    />
+    >
+      <span className="ui-filter-toggle-indicator" aria-hidden>
+        {selected ? <Check size={12} strokeWidth={3} /> : null}
+      </span>
+      {children}
+    </Toggle>
+  );
+}
+
+export function ChoiceGroup<T extends string | number>({
+  value,
+  items,
+  onChange,
+  ariaLabel,
+  className,
+}: {
+  value: T;
+  items: Array<{ value: T; label: React.ReactNode }>;
+  onChange: (value: T) => void;
+  ariaLabel: string;
+  className?: string;
+}) {
+  const moveSelection = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    const direction =
+      event.key === "ArrowRight" || event.key === "ArrowDown"
+        ? 1
+        : event.key === "ArrowLeft" || event.key === "ArrowUp"
+          ? -1
+          : 0;
+    if (!direction) return;
+
+    event.preventDefault();
+    const nextIndex = (index + direction + items.length) % items.length;
+    onChange(items[nextIndex]!.value);
+    const options = event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+      '[role="radio"]',
+    );
+    options?.[nextIndex]?.focus();
+  };
+
+  return (
+    <div
+      className={cn("ui-choice-group", className)}
+      role="radiogroup"
+      aria-label={ariaLabel}
+    >
+      {items.map((item, index) => {
+        const selected = item.value === value;
+        return (
+          <button
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            data-selected={selected ? "true" : "false"}
+            tabIndex={selected ? 0 : -1}
+            className="ui-choice-option"
+            key={item.value}
+            onClick={() => onChange(item.value)}
+            onKeyDown={(event) => moveSelection(event, index)}
+          >
+            <span className="ui-choice-option-indicator" aria-hidden>
+              {selected ? <Check size={12} strokeWidth={3} /> : null}
+            </span>
+            {item.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -66,49 +112,21 @@ export function SegmentedTabs<T extends string | number>({
   className?: string;
 }) {
   return (
-    <div
-      role="tablist"
-      aria-label={ariaLabel}
-      className={cx(
-        "flex rounded-[14px] border border-border bg-surface p-1",
-        className,
-      )}
+    <Tabs
+      value={String(value)}
+      onValueChange={(next) => {
+        const item = items.find((candidate) => String(candidate.value) === next);
+        if (item) onChange(item.value);
+      }}
+      className={cn(className)}
     >
-      {items.map((item) => {
-        const selected = item.value === value;
-        return (
-          <button
-            key={item.value}
-            type="button"
-            role="tab"
-            aria-selected={selected}
-            onClick={() => onChange(item.value)}
-            className={cx(
-              "flex-1 rounded-[10px] px-3 py-2.5 text-sm font-semibold transition-[transform,background-color,color] active:scale-[0.98]",
-              selected
-                ? "bg-soft text-primary"
-                : "text-muted hover:text-foreground",
-            )}
-          >
+      <TabsList aria-label={ariaLabel}>
+        {items.map((item) => (
+          <TabsTrigger key={item.value} value={String(item.value)}>
             {item.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-export function Card({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement> & { className?: string }) {
-  return (
-    <div
-      {...props}
-      className={cx(
-        "motion-card rounded-[18px] border border-border bg-surface/95 p-5",
-        className,
-      )}
-    />
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 }

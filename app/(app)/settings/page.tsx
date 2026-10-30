@@ -3,25 +3,44 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
+  Check,
   Globe2,
   Layers3,
-  Palette,
+  LogOut,
+  Plus,
   RefreshCw,
   ShieldCheck,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 
-import { Card, SelectField, TextField } from "@/components/ui/controls";
-import { ThemeControl } from "@/components/theme/theme-control";
 import {
-  Button,
-  ErrorState,
-  ListSkeleton,
-  PageHeader,
-} from "@/components/ui/feedback";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Toggle } from "@/components/ui/toggle";
+import { ErrorState, ListSkeleton, PageHeader } from "@/components/ui/feedback";
 import { api, isMockApi } from "@/lib/api";
 import { disableGoogleAutoSelect } from "@/lib/auth/google";
 import { formatDateTime } from "@/lib/date/italy";
@@ -50,19 +69,21 @@ function SettingToggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      className="setting-toggle-chip"
-      onClick={() => onChange(!checked)}
-    >
-      <span className="setting-toggle-indicator" aria-hidden>
-        {checked ? "✓" : ""}
+    <label className="setting-toggle-control">
+      <span className="setting-toggle-label">
+        <span>{label}</span>
+        <span className="setting-toggle-state">
+          {checked ? "Attive" : "Disattive"}
+        </span>
       </span>
-      <span>{label}</span>
-    </button>
+      <Switch
+        checked={checked}
+        disabled={disabled}
+        aria-label={label}
+        onCheckedChange={onChange}
+        className="setting-toggle-switch"
+      />
+    </label>
   );
 }
 
@@ -187,13 +208,6 @@ export default function SettingsPage() {
   const deleteAccount = useMutation({
     mutationFn: async () => {
       setDeleteError(null);
-      if (
-        !window.confirm(
-          "Eliminare definitivamente l’account, la watchlist e tutti i progressi? L’operazione non è reversibile.",
-        )
-      ) {
-        throw new Error("Operazione annullata.");
-      }
       await api.deleteAccount();
       disableGoogleAutoSelect();
       await clearBrowserCaches();
@@ -204,8 +218,11 @@ export default function SettingsPage() {
       router.replace("/login");
     },
     onError: (error) => {
-      if (error instanceof Error && error.message !== "Operazione annullata.")
-        setDeleteError(error.message);
+      setDeleteError(
+        error instanceof Error
+          ? error.message
+          : "Eliminazione dell’account non riuscita.",
+      );
     },
   });
 
@@ -293,7 +310,7 @@ export default function SettingsPage() {
         <div className="mt-5 grid gap-3 border-t border-border pt-5 sm:grid-cols-3">
           <label className="text-sm font-semibold">
             Orario
-            <TextField
+            <Input
               type="time"
               value={s.notificationLocalTime}
               disabled={updateSettings.isPending}
@@ -307,26 +324,35 @@ export default function SettingsPage() {
           </label>
           <label className="text-sm font-semibold">
             Preavviso
-            <SelectField
-              value={s.notificationLeadDays}
+            <Select
+              items={{
+                "0": "Giorno stesso",
+                "1": "1 giorno prima",
+                "3": "3 giorni prima",
+                "7": "7 giorni prima",
+              }}
+              value={String(s.notificationLeadDays)}
               disabled={updateSettings.isPending}
-              onChange={(event) =>
+              onValueChange={(value) =>
                 updateSettings.mutate({
-                  notificationLeadDays: Number(event.target.value) as
-                    0 | 1 | 3 | 7,
+                  notificationLeadDays: Number(value) as 0 | 1 | 3 | 7,
                 })
               }
-              className="mt-2 w-full"
             >
-              <option value="0">Giorno stesso</option>
-              <option value="1">1 giorno prima</option>
-              <option value="3">3 giorni prima</option>
-              <option value="7">7 giorni prima</option>
-            </SelectField>
+              <SelectTrigger className="mt-2" aria-label="Preavviso">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Giorno stesso</SelectItem>
+                <SelectItem value="1">1 giorno prima</SelectItem>
+                <SelectItem value="3">3 giorni prima</SelectItem>
+                <SelectItem value="7">7 giorni prima</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
           <label className="text-sm font-semibold">
             Fuso orario
-            <TextField
+            <Input
               value={s.timezone}
               disabled={updateSettings.isPending}
               onBlur={(event) =>
@@ -339,7 +365,7 @@ export default function SettingsPage() {
           </label>
           <label className="text-sm font-semibold">
             Ore silenziose da
-            <TextField
+            <Input
               type="time"
               value={s.notificationQuietStart ?? ""}
               disabled={updateSettings.isPending}
@@ -353,7 +379,7 @@ export default function SettingsPage() {
           </label>
           <label className="text-sm font-semibold">
             Ore silenziose fino a
-            <TextField
+            <Input
               type="time"
               value={s.notificationQuietEnd ?? ""}
               disabled={updateSettings.isPending}
@@ -412,13 +438,14 @@ export default function SettingsPage() {
           ].map((service) => {
             const selected = s.preferredServices.includes(service);
             return (
-              <button
-                type="button"
+              <Toggle
                 key={service}
-                aria-pressed={selected}
+                variant="outline"
+                className="settings-platform-toggle"
+                pressed={selected}
                 disabled={updateSettings.isPending}
-                className="setting-choice-chip"
-                onClick={() =>
+                aria-label={`${selected ? "Rimuovi" : "Aggiungi"} ${service} dalle piattaforme preferite`}
+                onPressedChange={() =>
                   updateSettings.mutate({
                     preferredServices: selected
                       ? s.preferredServices.filter((item) => item !== service)
@@ -426,22 +453,16 @@ export default function SettingsPage() {
                   })
                 }
               >
-                <span aria-hidden>{selected ? "✓" : ""}</span>
+                {selected ? (
+                  <Check size={16} strokeWidth={2.5} aria-hidden />
+                ) : (
+                  <Plus size={16} aria-hidden />
+                )}
                 {service}
-              </button>
+              </Toggle>
             );
           })}
         </div>
-      </Card>
-
-      <Card>
-        <h2 className="settings-section-heading">
-          <Palette size={20} aria-hidden /> Aspetto
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          Personalizza il tema e il colore principale dell’interfaccia.
-        </p>
-        <ThemeControl />
       </Card>
 
       <Card>
@@ -486,7 +507,7 @@ export default function SettingsPage() {
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <label className="text-sm font-semibold">
             Nome visualizzato
-            <TextField
+            <Input
               key={s.displayName ?? ""}
               defaultValue={s.displayName ?? ""}
               maxLength={100}
@@ -501,34 +522,45 @@ export default function SettingsPage() {
           </label>
           <label className="text-sm font-semibold">
             Lingua
-            <SelectField
+            <Select
+              items={{ "it-IT": "Italiano", "en-US": "English" }}
               value={s.locale}
               disabled={updateSettings.isPending}
-              onChange={(event) =>
-                updateSettings.mutate({ locale: event.target.value })
+              onValueChange={(value) =>
+                value && updateSettings.mutate({ locale: value })
               }
-              className="mt-2 w-full"
             >
-              <option value="it-IT">Italiano</option>
-              <option value="en-US">English</option>
-            </SelectField>
+              <SelectTrigger className="mt-2" aria-label="Lingua">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="it-IT">Italiano</SelectItem>
+                <SelectItem value="en-US">English</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
           <label className="text-sm font-semibold">
             Fuso orario
-            <SelectField
+            <Select
               value={s.timezone}
               disabled={updateSettings.isPending}
-              onChange={(event) =>
-                updateSettings.mutate({ timezone: event.target.value })
+              onValueChange={(value) =>
+                value && updateSettings.mutate({ timezone: value })
               }
-              className="mt-2 w-full"
             >
-              <option value="Europe/Rome">Europe/Rome</option>
-              <option value="Europe/London">Europe/London</option>
-              <option value="America/New_York">America/New_York</option>
-              <option value="Asia/Tokyo">Asia/Tokyo</option>
-              <option value="UTC">UTC</option>
-            </SelectField>
+              <SelectTrigger className="mt-2" aria-label="Fuso orario">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Europe/Rome">Europe/Rome</SelectItem>
+                <SelectItem value="Europe/London">Europe/London</SelectItem>
+                <SelectItem value="America/New_York">
+                  America/New_York
+                </SelectItem>
+                <SelectItem value="Asia/Tokyo">Asia/Tokyo</SelectItem>
+                <SelectItem value="UTC">UTC</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
         </div>
       </Card>
@@ -542,27 +574,59 @@ export default function SettingsPage() {
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button
-            variant="ghost"
+            variant="outline"
             disabled={resetCache.isPending}
             onClick={() => resetCache.mutate()}
           >
+            <RefreshCw
+              size={16}
+              aria-hidden
+              className={resetCache.isPending ? "animate-spin" : ""}
+            />
             Svuota cache locale
           </Button>
           <Button
             className="g_id_signout"
-            variant="danger"
+            variant="outline"
             disabled={logout.isPending}
             onClick={() => logout.mutate()}
           >
+            <LogOut size={16} aria-hidden />
             Esci
           </Button>
-          <Button
-            variant="danger"
-            disabled={deleteAccount.isPending}
-            onClick={() => deleteAccount.mutate()}
-          >
-            {deleteAccount.isPending ? "Eliminazione…" : "Elimina account"}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger
+              render={
+                <Button
+                  variant="destructive"
+                  disabled={deleteAccount.isPending}
+                />
+              }
+            >
+              <Trash2 size={16} aria-hidden />
+              {deleteAccount.isPending ? "Eliminazione…" : "Elimina account"}
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <div className="mb-4 flex size-11 items-center justify-center rounded-[14px] border border-destructive/30 bg-destructive/10 text-destructive">
+                <Trash2 size={20} aria-hidden />
+              </div>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Eliminare l’account?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Verranno eliminati definitivamente il tuo account, la
+                  watchlist e tutti i progressi. Questa operazione non può
+                  essere annullata.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                <AlertDialogAction onClick={() => deleteAccount.mutate()}>
+                  <Trash2 size={16} aria-hidden />
+                  Elimina definitivamente
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
         {logout.isError ? (
           <p role="alert" className="mt-3 text-sm text-accent">

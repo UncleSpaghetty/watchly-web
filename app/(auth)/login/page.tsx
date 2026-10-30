@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { EmailLoginForm } from "@/components/auth/email-login-form";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
+
+export const metadata: Metadata = {
+  title: "Accedi",
+  description:
+    "Accedi a Watchly per consultare il calendario e gestire le serie che segui.",
+  robots: { index: false, follow: false },
+};
 
 export default function LoginPage() {
   return (

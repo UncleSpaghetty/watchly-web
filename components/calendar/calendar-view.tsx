@@ -1,14 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { CalendarRange, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarRange, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { WatchStatusButton } from "@/components/episodes/watch-status-button";
+import { Button } from "@/components/ui/button";
 import { Chip, SegmentedTabs } from "@/components/ui/controls";
 import {
-  Button,
   EmptyState,
   ErrorState,
   ListSkeleton,
@@ -78,9 +78,9 @@ export function CalendarView() {
     const count = byDay.get(iso)?.length ?? 0;
     const isSelected = iso === selected;
     return (
-      <button
+      <Button
         key={iso}
-        type="button"
+        variant="ghost"
         disabled={count === 0}
         onClick={() => setSelected((current) => (current === iso ? null : iso))}
         aria-pressed={isSelected}
@@ -95,7 +95,7 @@ export function CalendarView() {
         <span
           className={`h-1.5 w-1.5 rounded-full ${count ? "bg-accent" : "bg-transparent"}`}
         />
-      </button>
+      </Button>
     );
   };
 
@@ -116,7 +116,9 @@ export function CalendarView() {
         <Chip
           selected={onlyUnwatched}
           onClick={() => setOnlyUnwatched((value) => !value)}
+          aria-label={`${onlyUnwatched ? "Disattiva" : "Attiva"} il filtro Solo da vedere`}
         >
+          <Eye size={15} aria-hidden />
           Solo da vedere
         </Chip>
       </div>
@@ -134,13 +136,13 @@ export function CalendarView() {
           <div className="text-center">
             <p className="font-semibold capitalize">{label}</p>
             {offset !== 0 ? (
-              <button
-                type="button"
-                className="text-xs font-semibold text-primary underline"
+              <Button
+                variant="link"
+                className="text-xs"
                 onClick={() => changeView(view)}
               >
                 Torna a oggi
-              </button>
+              </Button>
             ) : null}
           </div>
           <Button
@@ -188,13 +190,12 @@ export function CalendarView() {
           </h2>
         </div>
         {selected ? (
-          <button
-            type="button"
-            className="text-sm font-semibold text-primary hover:underline"
+          <Button
+            variant="link"
             onClick={() => setSelected(null)}
           >
             Mostra tutto il periodo
-          </button>
+          </Button>
         ) : null}
       </div>
       {calendar.isPending ? (
@@ -213,7 +214,7 @@ export function CalendarView() {
           }
         />
       ) : (
-        <ul className="space-y-2.5">
+        <ul className="episode-list episode-list-calendar">
           {visibleEntries.map((e, index) => {
             const isPast = e.date < today;
             const isToday = e.date === today;
@@ -228,56 +229,48 @@ export function CalendarView() {
               <li
                 key={e.episodeId}
                 style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
-                className={`episode-row list-reveal ${isPast ? "episode-row-past" : "episode-row-upcoming"}`}
+                className="episode-row episode-row-calendar list-reveal"
+                data-past={isPast || undefined}
               >
-                <div className="w-10 shrink-0 text-center">
-                  <span
-                    className={`block text-[22px] font-bold leading-none ${isPast ? "text-muted" : "text-primary"}`}
-                  >
+                <div className="episode-row-marker episode-date-marker">
+                  <span className="episode-date-day">
                     {Number(e.date.slice(8, 10))}
                   </span>
-                  <span className="mt-1 block text-[10px] font-bold uppercase text-muted">
+                  <span className="episode-date-weekday">
                     {shortWeekday}
                   </span>
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="episode-row-content">
                   <Link
                     href={`/series/${e.series.id}`}
-                    className={`block truncate text-[15px] font-bold hover:underline ${e.watchedAt ? "text-muted line-through" : ""}`}
+                    className={`episode-row-title ${e.watchedAt ? "episode-row-title-watched" : ""}`}
+                    title={e.series.title}
                   >
                     {e.series.title}
                   </Link>
-                  <p className="mt-0.5 text-[13px] text-muted">
+                  <p className="episode-row-subtitle" title={e.episodeTitle ?? undefined}>
                     {e.seasonNumber ? `S${e.seasonNumber} · ` : ""}
                     {e.episodeNumber ? `Ep. ${e.episodeNumber}` : "Episodio"}
                     {e.episodeTitle ? ` — ${e.episodeTitle}` : ""}
                   </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="text-[11px] font-medium text-muted">
-                      {sourceLabels[e.source]}
-                    </span>
-                    <span
-                      className={`text-[11px] font-bold ${isPast ? "text-muted" : "text-primary"}`}
-                    >
-                      {isPast
-                        ? "Già uscito"
-                        : isToday
-                          ? "Esce oggi"
-                          : "In arrivo"}
-                    </span>
-                  </div>
+                  <p className="episode-row-meta">
+                    {sourceLabels[e.source]}
+                    {isToday ? <span> · Esce oggi</span> : null}
+                  </p>
                 </div>
-                <WatchStatusButton
-                  watched={!!e.watchedAt}
-                  disabled={watched.isPending || isFuture}
-                  disabledLabel={isFuture ? "Non ancora uscito" : undefined}
-                  onToggle={() =>
-                    watched.mutate({
-                      episodeId: e.episodeId,
-                      watched: !e.watchedAt,
-                    })
-                  }
-                />
+                <div className="episode-row-state">
+                  <WatchStatusButton
+                    watched={!!e.watchedAt}
+                    disabled={watched.isPending || isFuture}
+                    disabledLabel={isFuture ? "In arrivo" : undefined}
+                    onToggle={() =>
+                      watched.mutate({
+                        episodeId: e.episodeId,
+                        watched: !e.watchedAt,
+                      })
+                    }
+                  />
+                </div>
               </li>
             );
           })}

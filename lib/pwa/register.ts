@@ -16,7 +16,10 @@ export function isStandalone(): boolean {
 
 export function isIOS(): boolean {
   if (typeof navigator === 'undefined') return false;
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  return (
+    /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
 }
 
 export function pushSupported(): boolean {
@@ -67,7 +70,7 @@ export async function showNotificationPreview(): Promise<void> {
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
     tag: 'watchly-preview',
-    data: { url: `/?date=${date}` },
+    data: { url: `/calendar?date=${date}` },
   };
   const registration = await navigator.serviceWorker.getRegistration('/');
 
@@ -80,7 +83,7 @@ export async function showNotificationPreview(): Promise<void> {
   const notification = new Notification(title, options);
   notification.onclick = () => {
     window.focus();
-    window.open(`/?date=${date}`, '_self');
+    window.open(`/calendar?date=${date}`, '_self');
     notification.close();
   };
 }

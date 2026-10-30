@@ -15,6 +15,7 @@ import { useState, type CSSProperties, type ReactNode } from 'react';
 
 import { SegmentedTabs } from '@/components/ui/controls';
 import { ErrorState, ListSkeleton, PageHeader } from '@/components/ui/feedback';
+import { Progress } from '@/components/ui/progress';
 import { api, type DashboardPeriodWeeks } from '@/lib/api';
 
 const periods: Array<{ value: DashboardPeriodWeeks; label: string }> = [
@@ -216,9 +217,11 @@ function DashboardContent({
                     {series.watched}/{series.aired} · {series.percentage}%
                   </span>
                 </div>
-                <span className="dashboard-progress-track">
-                  <i style={{ width: `${series.percentage}%` }} />
-                </span>
+                <Progress
+                  value={series.percentage}
+                  aria-label={`${series.title}: ${series.percentage}% completato`}
+                  className="dashboard-progress-track"
+                />
                 <small>
                   {series.backlog
                     ? `${series.backlog} episodi arretrati`

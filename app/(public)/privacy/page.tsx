@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Informativa privacy",
   description:
     "Informativa sul trattamento dei dati personali degli utenti di Watchly.",
+  alternates: { canonical: "/privacy" },
 };
 
 export default function PrivacyPage() {

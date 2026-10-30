@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Informazioni",
   description:
     "Informazioni su Watchly, funzionalità, fonti e documenti legali.",
+  alternates: { canonical: "/about" },
 };
 
 export default function AboutPage() {

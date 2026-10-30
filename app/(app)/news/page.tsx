@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   BookOpen,
   Bookmark,
-  CheckCheck,
   Grid2X2,
   Play,
   Tv,
@@ -15,7 +14,9 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { FollowButton } from "@/components/series/series-card";
-import { Card, Chip } from "@/components/ui/controls";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { ChoiceGroup } from "@/components/ui/controls";
 import {
   EmptyState,
   ErrorState,
@@ -27,6 +28,7 @@ import { formatDateTime } from "@/lib/date/italy";
 import { useNewsStateMutation } from "@/lib/hooks";
 
 type Feed = "all" | "saved";
+type CategoryFilter = NonNullable<NewsItem["category"]> | "all";
 
 const categoryItems: Array<{
   value: NewsItem["category"];
@@ -60,38 +62,40 @@ export default function NewsPage() {
       />
 
       <section className="filter-panel mb-6" aria-label="Filtri del feed">
-        <div className="news-feed-filters">
-          {(["all", "saved"] as const).map((value) => (
-            <Chip
-              key={value}
-              selected={feed === value}
-              onClick={() => setFeed(value)}
-            >
-              {value === "all"
-                ? "Tutti"
-                : "Salvati"}
-            </Chip>
-          ))}
-        </div>
-        <div className="news-category-filters" aria-label="Categoria notizie">
-          {categoryItems.map(({ Icon, ...item }) => (
-            <Chip
-              key={item.value ?? "all"}
-              selected={category === item.value}
-              onClick={() => setCategory(item.value)}
-            >
-              <Icon size={15} aria-hidden />
-              {item.value === null ? (
-                <>
-                  <span className="news-category-long">{item.label}</span>
-                  <span className="news-category-short">Tutte</span>
-                </>
-              ) : (
-                item.label
-              )}
-            </Chip>
-          ))}
-        </div>
+        <ChoiceGroup<Feed>
+          ariaLabel="Notizie da mostrare"
+          className="news-feed-filters"
+          value={feed}
+          onChange={setFeed}
+          items={[
+            { value: "all", label: "Tutti" },
+            { value: "saved", label: "Salvati" },
+          ]}
+        />
+        <ChoiceGroup<CategoryFilter>
+          ariaLabel="Categoria notizie"
+          className="news-category-filters"
+          value={category ?? "all"}
+          onChange={(value) =>
+            setCategory(value === "all" ? null : value)
+          }
+          items={categoryItems.map(({ Icon, ...item }) => ({
+            value: item.value ?? "all",
+            label: (
+              <>
+                <Icon size={15} aria-hidden />
+                {item.value === null ? (
+                  <>
+                    <span className="news-category-long">{item.label}</span>
+                    <span className="news-category-short">Tutte</span>
+                  </>
+                ) : (
+                  item.label
+                )}
+              </>
+            ),
+          }))}
+        />
       </section>
 
       {news.isPending ? (
@@ -128,8 +132,9 @@ export default function NewsPage() {
                       {n.category ? ` · ${n.category}` : null}
                     </p>
                     <div className="flex gap-2">
-                      <button
-                        type="button"
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
                         aria-label={
                           n.saved ? "Rimuovi dai salvati" : "Salva notizia"
                         }
@@ -141,30 +146,13 @@ export default function NewsPage() {
                             patch: { saved: !n.saved },
                           })
                         }
-                        className="rounded-lg border border-border p-2 text-primary"
+                        className="text-primary"
                       >
                         <Bookmark
                           size={16}
                           className={n.saved ? "fill-current" : ""}
                         />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={
-                          n.readAt ? "Segna come non letta" : "Segna come letta"
-                        }
-                        aria-pressed={!!n.readAt}
-                        disabled={state.isPending}
-                        onClick={() =>
-                          state.mutate({
-                            newsId: n.id,
-                            patch: { read: !n.readAt },
-                          })
-                        }
-                        className="rounded-lg border border-border p-2 text-primary"
-                      >
-                        <CheckCheck size={16} />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                   <h2 className="mt-1 text-[16px] font-bold">{n.title}</h2>

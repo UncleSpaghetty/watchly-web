@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Settings } from "lucide-react";
 import Link from "next/link";
 
-import { Card } from "@/components/ui/controls";
+import { Card } from "@/components/ui/card";
 import { ErrorState, ListSkeleton, PageHeader } from "@/components/ui/feedback";
 import { api } from "@/lib/api";
 import { formatDateTime } from "@/lib/date/italy";
