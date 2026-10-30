@@ -5,6 +5,7 @@ import Link from 'next/link';
 
 import { Poster } from '@/components/series/poster';
 import { ErrorState, ListSkeleton } from '@/components/ui/feedback';
+import { Progress } from '@/components/ui/progress';
 import { api } from '@/lib/api';
 import {
   formatLongDate,
@@ -142,9 +143,11 @@ export function HomeView() {
                     <p>
                       {series.watchedEpisodes}/{series.airedEpisodes} episodi
                     </p>
-                    <span className="home-progress">
-                      <i style={{ width: `${percentage}%` }} />
-                    </span>
+                    <Progress
+                      value={percentage}
+                      aria-label={`${percentage}% completato`}
+                      className="home-progress"
+                    />
                   </div>
                   {series.nextUnwatchedEpisodeId ? (
                     <Link

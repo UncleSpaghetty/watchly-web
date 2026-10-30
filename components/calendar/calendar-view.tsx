@@ -6,9 +6,9 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { WatchStatusButton } from "@/components/episodes/watch-status-button";
+import { Button } from "@/components/ui/button";
 import { Chip, SegmentedTabs } from "@/components/ui/controls";
 import {
-  Button,
   EmptyState,
   ErrorState,
   ListSkeleton,
@@ -78,9 +78,9 @@ export function CalendarView() {
     const count = byDay.get(iso)?.length ?? 0;
     const isSelected = iso === selected;
     return (
-      <button
+      <Button
         key={iso}
-        type="button"
+        variant="ghost"
         disabled={count === 0}
         onClick={() => setSelected((current) => (current === iso ? null : iso))}
         aria-pressed={isSelected}
@@ -95,7 +95,7 @@ export function CalendarView() {
         <span
           className={`h-1.5 w-1.5 rounded-full ${count ? "bg-accent" : "bg-transparent"}`}
         />
-      </button>
+      </Button>
     );
   };
 
@@ -134,13 +134,13 @@ export function CalendarView() {
           <div className="text-center">
             <p className="font-semibold capitalize">{label}</p>
             {offset !== 0 ? (
-              <button
-                type="button"
-                className="text-xs font-semibold text-primary underline"
+              <Button
+                variant="link"
+                className="text-xs"
                 onClick={() => changeView(view)}
               >
                 Torna a oggi
-              </button>
+              </Button>
             ) : null}
           </div>
           <Button
@@ -188,13 +188,12 @@ export function CalendarView() {
           </h2>
         </div>
         {selected ? (
-          <button
-            type="button"
-            className="text-sm font-semibold text-primary hover:underline"
+          <Button
+            variant="link"
             onClick={() => setSelected(null)}
           >
             Mostra tutto il periodo
-          </button>
+          </Button>
         ) : null}
       </div>
       {calendar.isPending ? (

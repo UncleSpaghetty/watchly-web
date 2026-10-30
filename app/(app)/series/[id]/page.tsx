@@ -7,8 +7,8 @@ import { useEffect, useState } from 'react';
 import { WatchStatusButton } from '@/components/episodes/watch-status-button';
 import { Poster } from '@/components/series/poster';
 import { FollowButton } from '@/components/series/series-card';
+import { Button } from '@/components/ui/button';
 import {
-  Button,
   EmptyState,
   ErrorState,
   ListSkeleton,
@@ -92,13 +92,13 @@ export default function SeriesPage() {
   );
   return (
     <div>
-      <button
-        type="button"
+      <Button
+        variant="link"
         onClick={() => router.back()}
-        className="mb-4 inline-block cursor-pointer text-sm font-semibold text-primary hover:underline"
+        className="mb-4"
       >
         ← Indietro
-      </button>
+      </Button>
 
       <div className="detail-hero group mb-5 flex gap-4 overflow-hidden rounded-[20px] border border-border bg-surface/90 p-4 sm:p-5">
         <Poster

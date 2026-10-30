@@ -5,7 +5,6 @@ import {
   Bell,
   Globe2,
   Layers3,
-  Palette,
   RefreshCw,
   ShieldCheck,
   UserRound,
@@ -14,10 +13,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 
-import { Card, SelectField, TextField } from "@/components/ui/controls";
-import { ThemeControl } from "@/components/theme/theme-control";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
-  Button,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Toggle } from "@/components/ui/toggle";
+import {
   ErrorState,
   ListSkeleton,
   PageHeader,
@@ -50,19 +58,15 @@ function SettingToggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      className="setting-toggle-chip"
-      onClick={() => onChange(!checked)}
-    >
-      <span className="setting-toggle-indicator" aria-hidden>
-        {checked ? "✓" : ""}
-      </span>
+    <label className="flex min-h-11 items-center justify-between gap-3 rounded-[14px] border border-border bg-surface/70 px-3 py-2 text-sm font-semibold">
       <span>{label}</span>
-    </button>
+      <Switch
+        checked={checked}
+        disabled={disabled}
+        aria-label={label}
+        onCheckedChange={onChange}
+      />
+    </label>
   );
 }
 
@@ -293,7 +297,7 @@ export default function SettingsPage() {
         <div className="mt-5 grid gap-3 border-t border-border pt-5 sm:grid-cols-3">
           <label className="text-sm font-semibold">
             Orario
-            <TextField
+            <Input
               type="time"
               value={s.notificationLocalTime}
               disabled={updateSettings.isPending}
@@ -307,26 +311,35 @@ export default function SettingsPage() {
           </label>
           <label className="text-sm font-semibold">
             Preavviso
-            <SelectField
-              value={s.notificationLeadDays}
+            <Select
+              items={{
+                "0": "Giorno stesso",
+                "1": "1 giorno prima",
+                "3": "3 giorni prima",
+                "7": "7 giorni prima",
+              }}
+              value={String(s.notificationLeadDays)}
               disabled={updateSettings.isPending}
-              onChange={(event) =>
+              onValueChange={(value) =>
                 updateSettings.mutate({
-                  notificationLeadDays: Number(event.target.value) as
-                    0 | 1 | 3 | 7,
+                  notificationLeadDays: Number(value) as 0 | 1 | 3 | 7,
                 })
               }
-              className="mt-2 w-full"
             >
-              <option value="0">Giorno stesso</option>
-              <option value="1">1 giorno prima</option>
-              <option value="3">3 giorni prima</option>
-              <option value="7">7 giorni prima</option>
-            </SelectField>
+              <SelectTrigger className="mt-2" aria-label="Preavviso">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Giorno stesso</SelectItem>
+                <SelectItem value="1">1 giorno prima</SelectItem>
+                <SelectItem value="3">3 giorni prima</SelectItem>
+                <SelectItem value="7">7 giorni prima</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
           <label className="text-sm font-semibold">
             Fuso orario
-            <TextField
+            <Input
               value={s.timezone}
               disabled={updateSettings.isPending}
               onBlur={(event) =>
@@ -339,7 +352,7 @@ export default function SettingsPage() {
           </label>
           <label className="text-sm font-semibold">
             Ore silenziose da
-            <TextField
+            <Input
               type="time"
               value={s.notificationQuietStart ?? ""}
               disabled={updateSettings.isPending}
@@ -353,7 +366,7 @@ export default function SettingsPage() {
           </label>
           <label className="text-sm font-semibold">
             Ore silenziose fino a
-            <TextField
+            <Input
               type="time"
               value={s.notificationQuietEnd ?? ""}
               disabled={updateSettings.isPending}
@@ -412,13 +425,11 @@ export default function SettingsPage() {
           ].map((service) => {
             const selected = s.preferredServices.includes(service);
             return (
-              <button
-                type="button"
+              <Toggle
                 key={service}
-                aria-pressed={selected}
+                pressed={selected}
                 disabled={updateSettings.isPending}
-                className="setting-choice-chip"
-                onClick={() =>
+                onPressedChange={() =>
                   updateSettings.mutate({
                     preferredServices: selected
                       ? s.preferredServices.filter((item) => item !== service)
@@ -426,22 +437,11 @@ export default function SettingsPage() {
                   })
                 }
               >
-                <span aria-hidden>{selected ? "✓" : ""}</span>
                 {service}
-              </button>
+              </Toggle>
             );
           })}
         </div>
-      </Card>
-
-      <Card>
-        <h2 className="settings-section-heading">
-          <Palette size={20} aria-hidden /> Aspetto
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          Personalizza il tema e il colore principale dell’interfaccia.
-        </p>
-        <ThemeControl />
       </Card>
 
       <Card>
@@ -486,7 +486,7 @@ export default function SettingsPage() {
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <label className="text-sm font-semibold">
             Nome visualizzato
-            <TextField
+            <Input
               key={s.displayName ?? ""}
               defaultValue={s.displayName ?? ""}
               maxLength={100}
@@ -501,34 +501,43 @@ export default function SettingsPage() {
           </label>
           <label className="text-sm font-semibold">
             Lingua
-            <SelectField
+            <Select
+              items={{ "it-IT": "Italiano", "en-US": "English" }}
               value={s.locale}
               disabled={updateSettings.isPending}
-              onChange={(event) =>
-                updateSettings.mutate({ locale: event.target.value })
+              onValueChange={(value) =>
+                value && updateSettings.mutate({ locale: value })
               }
-              className="mt-2 w-full"
             >
-              <option value="it-IT">Italiano</option>
-              <option value="en-US">English</option>
-            </SelectField>
+              <SelectTrigger className="mt-2" aria-label="Lingua">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="it-IT">Italiano</SelectItem>
+                <SelectItem value="en-US">English</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
           <label className="text-sm font-semibold">
             Fuso orario
-            <SelectField
+            <Select
               value={s.timezone}
               disabled={updateSettings.isPending}
-              onChange={(event) =>
-                updateSettings.mutate({ timezone: event.target.value })
+              onValueChange={(value) =>
+                value && updateSettings.mutate({ timezone: value })
               }
-              className="mt-2 w-full"
             >
-              <option value="Europe/Rome">Europe/Rome</option>
-              <option value="Europe/London">Europe/London</option>
-              <option value="America/New_York">America/New_York</option>
-              <option value="Asia/Tokyo">Asia/Tokyo</option>
-              <option value="UTC">UTC</option>
-            </SelectField>
+              <SelectTrigger className="mt-2" aria-label="Fuso orario">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Europe/Rome">Europe/Rome</SelectItem>
+                <SelectItem value="Europe/London">Europe/London</SelectItem>
+                <SelectItem value="America/New_York">America/New_York</SelectItem>
+                <SelectItem value="Asia/Tokyo">Asia/Tokyo</SelectItem>
+                <SelectItem value="UTC">UTC</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
         </div>
       </Card>
@@ -550,14 +559,14 @@ export default function SettingsPage() {
           </Button>
           <Button
             className="g_id_signout"
-            variant="danger"
+            variant="destructive"
             disabled={logout.isPending}
             onClick={() => logout.mutate()}
           >
             Esci
           </Button>
           <Button
-            variant="danger"
+            variant="destructive"
             disabled={deleteAccount.isPending}
             onClick={() => deleteAccount.mutate()}
           >

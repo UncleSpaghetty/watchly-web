@@ -4,8 +4,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useState } from 'react';
 
-import { TextField } from '@/components/ui/controls';
-import { Button } from '@/components/ui/feedback';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 
 export function EmailLoginForm() {
@@ -41,15 +41,15 @@ export function EmailLoginForm() {
     return (
       <p className="text-center text-sm text-muted">
         Preferisci usare le tue credenziali?{' '}
-        <button
-          type="button"
-          className="font-semibold text-primary underline decoration-primary/50 underline-offset-4 transition-colors hover:text-foreground cursor-pointer"
+        <Button
+          variant="link"
+          className="h-auto min-h-0 font-semibold decoration-primary/50 hover:text-foreground"
           aria-controls="email-login-form"
           aria-expanded={false}
           onClick={() => setExpanded(true)}
         >
           Accedi con email e password
-        </button>
+        </Button>
       </p>
     );
   }
@@ -60,7 +60,7 @@ export function EmailLoginForm() {
         <label className="mb-1.5 block text-sm font-semibold" htmlFor="email">
           Email
         </label>
-        <TextField
+        <Input
           id="email"
           name="email"
           type="email"
@@ -77,7 +77,7 @@ export function EmailLoginForm() {
         <label className="mb-1.5 block text-sm font-semibold" htmlFor="password">
           Password
         </label>
-        <TextField
+        <Input
           id="password"
           name="password"
           type="password"

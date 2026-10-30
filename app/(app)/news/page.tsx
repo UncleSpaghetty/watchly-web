@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   BookOpen,
   Bookmark,
-  CheckCheck,
   Grid2X2,
   Play,
   Tv,
@@ -15,7 +14,9 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { FollowButton } from "@/components/series/series-card";
-import { Card, Chip } from "@/components/ui/controls";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Chip } from "@/components/ui/controls";
 import {
   EmptyState,
   ErrorState,
@@ -128,8 +129,9 @@ export default function NewsPage() {
                       {n.category ? ` · ${n.category}` : null}
                     </p>
                     <div className="flex gap-2">
-                      <button
-                        type="button"
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
                         aria-label={
                           n.saved ? "Rimuovi dai salvati" : "Salva notizia"
                         }
@@ -141,30 +143,13 @@ export default function NewsPage() {
                             patch: { saved: !n.saved },
                           })
                         }
-                        className="rounded-lg border border-border p-2 text-primary"
+                        className="text-primary"
                       >
                         <Bookmark
                           size={16}
                           className={n.saved ? "fill-current" : ""}
                         />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={
-                          n.readAt ? "Segna come non letta" : "Segna come letta"
-                        }
-                        aria-pressed={!!n.readAt}
-                        disabled={state.isPending}
-                        onClick={() =>
-                          state.mutate({
-                            newsId: n.id,
-                            patch: { read: !n.readAt },
-                          })
-                        }
-                        className="rounded-lg border border-border p-2 text-primary"
-                      >
-                        <CheckCheck size={16} />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                   <h2 className="mt-1 text-[16px] font-bold">{n.title}</h2>

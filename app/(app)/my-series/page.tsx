@@ -13,7 +13,17 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { Poster } from "@/components/series/poster";
-import { Chip, SelectField, TextField } from "@/components/ui/controls";
+import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/controls";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   EmptyState,
   ErrorState,
@@ -25,6 +35,13 @@ import { formatLongDate } from "@/lib/date/italy";
 import { useFollowingUpdateMutation } from "@/lib/hooks";
 
 type Sort = "title" | "next" | "backlog" | "status";
+
+const sortOptions: Array<{ value: Sort; label: string }> = [
+  { value: "title", label: "Titolo" },
+  { value: "next", label: "Prossima uscita" },
+  { value: "backlog", label: "Da recuperare" },
+  { value: "status", label: "Stato" },
+];
 
 const statusOptions: Array<{ value: WatchStatus | "all"; label: string }> = [
   { value: "all", label: "Tutti" },
@@ -116,7 +133,7 @@ export default function MySeriesPage() {
 
       <section className="filter-panel" aria-label="Filtri della watchlist">
         <div className="following-local-search">
-          <TextField
+          <Input
             type="search"
             value={filter}
             onChange={(event) => setFilter(event.target.value)}
@@ -146,16 +163,22 @@ export default function MySeriesPage() {
         <label className="following-sort-row">
           <ArrowUpDown size={16} aria-hidden />
           <span>Ordina per</span>
-          <SelectField
-            aria-label="Ordina watchlist"
+          <Select
+            items={sortOptions}
             value={sort}
-            onChange={(event) => setSort(event.target.value as Sort)}
+            onValueChange={(value) => setSort(value as Sort)}
           >
-            <option value="title">Titolo</option>
-            <option value="next">Prossima uscita</option>
-            <option value="backlog">Da recuperare</option>
-            <option value="status">Stato</option>
-          </SelectField>
+            <SelectTrigger aria-label="Ordina watchlist">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
       </section>
 
@@ -186,6 +209,11 @@ export default function MySeriesPage() {
                 : 0;
               return (
                 <li className="following-card" key={series.id}>
+                  <Link
+                    href={`/series/${series.id}`}
+                    aria-label={`Apri il dettaglio di ${series.title}`}
+                    className="following-card-link"
+                  />
                   <div className="following-card-cover">
                     <Poster
                       url={series.posterUrl}
@@ -200,9 +228,7 @@ export default function MySeriesPage() {
                   <div className="following-card-body">
                     <div className="following-card-title-row">
                       <div className="min-w-0">
-                        <Link href={`/series/${series.id}`}>
-                          <h2>{series.title}</h2>
-                        </Link>
+                        <h2>{series.title}</h2>
                         <p>
                           {series.kind === "anime" ? "Anime" : "Serie TV"}
                           {series.year ? ` · ${series.year}` : ""}
@@ -214,8 +240,8 @@ export default function MySeriesPage() {
                           <MoreVertical size={19} aria-hidden />
                         </summary>
                         <div className="following-menu-panel">
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost"
                             aria-label={
                               series.favorite
                                 ? "Rimuovi dai preferiti"
@@ -231,13 +257,18 @@ export default function MySeriesPage() {
                             }
                             className="following-menu-action"
                           >
+                            <span>
+                              {series.favorite
+                                ? "Rimuovi dai preferiti"
+                                : "Aggiungi ai preferiti"}
+                            </span>
                             <Star
                               size={17}
                               className={series.favorite ? "fill-current" : ""}
                             />
-                          </button>
-                          <button
-                            type="button"
+                          </Button>
+                          <Button
+                            variant="ghost"
                             aria-label={
                               series.notificationsEnabled === false
                                 ? "Attiva avvisi per la serie"
@@ -256,33 +287,44 @@ export default function MySeriesPage() {
                             }
                             className="following-menu-action"
                           >
+                            <span>
+                              {series.notificationsEnabled === false
+                                ? "Attiva notifiche"
+                                : "Disattiva notifiche"}
+                            </span>
                             {series.notificationsEnabled === false ? (
                               <BellOff size={17} />
                             ) : (
                               <Bell size={17} />
                             )}
-                          </button>
-                          <SelectField
-                            aria-label={`Stato di ${series.title}`}
+                          </Button>
+                          <Select
+                            items={statusOptions.slice(1)}
                             value={series.watchStatus}
                             disabled={update.isPending}
-                            onChange={(event) =>
+                            onValueChange={(value) =>
                               update.mutate({
                                 seriesId: series.id,
                                 patch: {
-                                  watchStatus: event.target
-                                    .value as WatchStatus,
+                                  watchStatus: value as WatchStatus,
                                 },
                               })
                             }
-                            className="w-full px-2 py-1 text-xs"
                           >
-                            {statusOptions.slice(1).map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </SelectField>
+                            <SelectTrigger
+                              aria-label={`Stato di ${series.title}`}
+                              className="w-full px-2 py-1 text-xs"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {statusOptions.slice(1).map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </details>
                     </div>
@@ -293,9 +335,11 @@ export default function MySeriesPage() {
                         ? ` · ${series.backlogEpisodes} da recuperare`
                         : " · In pari"}
                     </p>
-                    <span className="following-progress-track">
-                      <i style={{ width: `${percentage}%` }} />
-                    </span>
+                    <Progress
+                      value={percentage}
+                      aria-label={`${percentage}% completato`}
+                      className="following-progress-track"
+                    />
 
                     <div className="following-card-meta">
                       <p>

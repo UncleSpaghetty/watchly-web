@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
 
-import { Button } from '@/components/ui/feedback';
+import { Button } from '@/components/ui/button';
 import { sourceLabels, type SeriesSummary } from '@/lib/api';
 import { useFollowMutation } from '@/lib/hooks';
 
@@ -21,7 +21,7 @@ export function FollowButton({
   const mutation = useFollowMutation();
   return (
     <Button
-      variant={following ? 'primary' : 'ghost'}
+      variant={following ? 'default' : 'outline'}
       aria-pressed={following}
       aria-label={following ? 'Smetti di seguire' : 'Segui'}
       title={following ? 'Smetti di seguire' : 'Segui'}

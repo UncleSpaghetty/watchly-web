@@ -6,14 +6,21 @@ import {
   Film,
   Grid2X2,
   ListFilter,
-  Search,
   Tv,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 import { SeriesCard } from "@/components/series/series-card";
-import { Chip, SelectField } from "@/components/ui/controls";
+import { Chip } from "@/components/ui/controls";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   EmptyState,
   ErrorState,
@@ -37,6 +44,12 @@ const genreItems = [
 ];
 const currentYear = new Date().getFullYear();
 const yearItems = Array.from({ length: 50 }, (_, index) => currentYear - index);
+const sortItems = [
+  { value: "relevance", label: "Più rilevanti" },
+  { value: "rating", label: "Valutazione" },
+  { value: "year", label: "Anno" },
+  { value: "title", label: "Titolo" },
+] as const;
 
 export default function SearchPage() {
   return <CatalogPage />;
@@ -111,9 +124,8 @@ function SearchContent({
       <PageHeader title={title} subtitle={subtitle} />
 
 
-      <label className="explore-search explore-search-desktop">
-        <Search size={19} aria-hidden />
-        <input
+      <div className="explore-search-desktop">
+        <Input
           type="search"
           value={text}
           onChange={(event) => setText(event.target.value)}
@@ -122,12 +134,11 @@ function SearchContent({
           autoCapitalize="none"
           autoCorrect="off"
         />
-      </label>
+      </div>
 
       <section className="filter-panel" aria-label="Filtri di ricerca">
-        <label className="explore-search explore-search-mobile">
-          <Search size={19} aria-hidden />
-          <input
+        <div className="explore-search-mobile">
+          <Input
             type="search"
             value={text}
             onChange={(event) => setText(event.target.value)}
@@ -136,7 +147,7 @@ function SearchContent({
             autoCapitalize="none"
             autoCorrect="off"
           />
-        </label>
+        </div>
 
         <div className="explore-kind-filters">
           {(["all", "anime", "tv", "film"] as const).map((value) => (
@@ -166,43 +177,72 @@ function SearchContent({
         </div>
 
         <div className="search-primary-filters">
-          <SelectField
+          <Select
+            items={[
+              { value: "all", label: "Tutti i generi" },
+              ...genreItems,
+            ]}
             value={genre}
-            onChange={(event) => setGenre(event.target.value)}
-            aria-label="Genere"
+            onValueChange={(value) =>
+              setGenre(!value || value === "all" ? "" : value)
+            }
           >
-            <option value="">Tutti i generi</option>
-            {genreItems.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField
+            <SelectTrigger aria-label="Genere">
+              <SelectValue placeholder="Tutti i generi" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti i generi</SelectItem>
+              {genreItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            items={[
+              { value: "all", label: "Tutti gli anni" },
+              ...yearItems.map((item) => ({
+                value: String(item),
+                label: String(item),
+              })),
+            ]}
             value={year}
-            onChange={(event) => setYear(event.target.value)}
-            aria-label="Anno"
+            onValueChange={(value) =>
+              setYear(!value || value === "all" ? "" : value)
+            }
           >
-            <option value="">Tutti gli anni</option>
-            {yearItems.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </SelectField>
+            <SelectTrigger aria-label="Anno">
+              <SelectValue placeholder="Tutti gli anni" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti gli anni</SelectItem>
+              {yearItems.map((item) => (
+                <SelectItem key={item} value={String(item)}>
+                  {item}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <label className="explore-sort-control">
             <span>Ordina per</span>
             <ListFilter size={19} aria-hidden />
-            <SelectField
+            <Select
+              items={sortItems}
               value={sort}
-              onChange={(event) => setSort(event.target.value as typeof sort)}
-              aria-label="Ordina risultati"
+              onValueChange={(value) => setSort(value as typeof sort)}
             >
-              <option value="relevance">Più rilevanti</option>
-              <option value="rating">Valutazione</option>
-              <option value="year">Anno</option>
-              <option value="title">Titolo</option>
-            </SelectField>
+              <SelectTrigger aria-label="Ordina risultati">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {sortItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
         </div>
       </section>
