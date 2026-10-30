@@ -12,7 +12,7 @@ export function AppTopbar({ userName }: { userName?: string }) {
     <header className="app-topbar">
       <Link
         className="app-topbar-brand"
-        href="/home"
+        href="/"
         aria-label="Watchly, home"
       >
         <Image

@@ -8,6 +8,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  async redirects() {
+    return [{ source: '/home', destination: '/', permanent: true }];
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'media.kitsu.app' },

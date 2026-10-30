@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 
-import { CalendarView } from '@/components/calendar/calendar-view';
+import { HomeView } from '@/components/home/home-view';
 
-export const metadata: Metadata = { title: 'Calendario' };
+export const metadata: Metadata = { title: 'Home' };
 
 export default function Page() {
-  return <CalendarView />;
+  return <HomeView />;
 }

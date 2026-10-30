@@ -1,4 +1,4 @@
-const VERSION = 'v3';
+const VERSION = 'v4';
 const STATIC_CACHE = `watchly-static-${VERSION}`;
 const PAGES_CACHE = `watchly-pages-${VERSION}`;
 
@@ -74,14 +74,14 @@ self.addEventListener('push', (event) => {
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       tag: data.date ? `watchly-${data.date}` : 'watchly-daily',
-      data: { url: data.url || '/' },
+      data: { url: data.url || '/calendar' },
     }),
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const target = new URL(event.notification.data?.url || '/', self.location.origin).href;
+  const target = new URL(event.notification.data?.url || '/calendar', self.location.origin).href;
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {

@@ -64,7 +64,7 @@ export function HomeView() {
             : 'Consulta il calendario o riprendi una delle serie che stai seguendo.'}
         </p>
         <div className="home-hero-actions">
-          <Link href="/" className="home-primary-action">
+          <Link href="/calendar" className="home-primary-action">
             <CalendarDays size={17} aria-hidden /> Apri il calendario
           </Link>
           <Link href="/my-series" className="home-secondary-action">
@@ -79,7 +79,7 @@ export function HomeView() {
             <p className="home-kicker">IN PROGRAMMA</p>
             <h2 id="home-week-title">Questa settimana</h2>
           </div>
-          <Link href="/">Vedi calendario</Link>
+          <Link href="/calendar">Vedi calendario</Link>
         </div>
         <div className="home-week-strip">
           {week.days.map((day) => {
@@ -94,7 +94,7 @@ export function HomeView() {
               .replace('.', '');
             return (
               <Link
-                href="/"
+                href="/calendar"
                 key={day.iso}
                 className={
                   day.iso === today ? 'home-day home-day-today' : 'home-day'

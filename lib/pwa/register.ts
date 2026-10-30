@@ -67,7 +67,7 @@ export async function showNotificationPreview(): Promise<void> {
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
     tag: 'watchly-preview',
-    data: { url: `/?date=${date}` },
+    data: { url: `/calendar?date=${date}` },
   };
   const registration = await navigator.serviceWorker.getRegistration('/');
 
@@ -80,7 +80,7 @@ export async function showNotificationPreview(): Promise<void> {
   const notification = new Notification(title, options);
   notification.onclick = () => {
     window.focus();
-    window.open(`/?date=${date}`, '_self');
+    window.open(`/calendar?date=${date}`, '_self');
     notification.close();
   };
 }
