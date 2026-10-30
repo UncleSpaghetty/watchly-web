@@ -9,6 +9,7 @@ import { legalConfig } from "@/lib/legal";
 export const metadata: Metadata = {
   title: "Termini di servizio",
   description: "Condizioni applicabili all’utilizzo del servizio Watchly.",
+  alternates: { canonical: "/terms" },
 };
 
 export default function TermsPage() {
